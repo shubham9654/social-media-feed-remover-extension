@@ -1,0 +1,22 @@
+{
+  "name": "social-media-feed-remover",
+  "version": "1.0.0",
+  "description": "Remove distracting social media feeds and replace them with inspirational quotes",
+  "type": "module",
+  "scripts": {
+    "build": "node build.js",
+    "dev": "node build.js --watch",
+    "package": "node build.js && zip -r dist/social-media-feed-remover.zip dist/ -x '*.DS_Store'"
+  },
+  "keywords": [
+    "chrome-extension",
+    "productivity",
+    "social-media",
+    "focus"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "esbuild": "^0.19.12"
+  }
+}

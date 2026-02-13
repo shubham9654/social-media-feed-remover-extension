@@ -1,0 +1,95 @@
+{
+  "manifest_version": 3,
+  "name": "Social Media Feed Remover",
+  "version": "1.0.0",
+  "description": "Remove distracting social media feeds and replace them with inspirational quotes. Stay focused, stay productive.",
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://www.facebook.com/*",
+    "https://facebook.com/*",
+    "https://www.twitter.com/*",
+    "https://twitter.com/*",
+    "https://x.com/*",
+    "https://www.instagram.com/*",
+    "https://instagram.com/*",
+    "https://www.linkedin.com/*",
+    "https://linkedin.com/*",
+    "https://www.reddit.com/*",
+    "https://reddit.com/*",
+    "https://www.youtube.com/*",
+    "https://youtube.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.facebook.com/*",
+        "https://facebook.com/*"
+      ],
+      "js": ["content/facebook.js"],
+      "css": ["styles/feed-replacer.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://www.twitter.com/*",
+        "https://twitter.com/*",
+        "https://x.com/*"
+      ],
+      "js": ["content/twitter.js"],
+      "css": ["styles/feed-replacer.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://www.instagram.com/*",
+        "https://instagram.com/*"
+      ],
+      "js": ["content/instagram.js"],
+      "css": ["styles/feed-replacer.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://www.linkedin.com/*",
+        "https://linkedin.com/*"
+      ],
+      "js": ["content/linkedin.js"],
+      "css": ["styles/feed-replacer.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://www.reddit.com/*",
+        "https://reddit.com/*"
+      ],
+      "js": ["content/reddit.js"],
+      "css": ["styles/feed-replacer.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://www.youtube.com/*",
+        "https://youtube.com/*"
+      ],
+      "js": ["content/youtube.js"],
+      "css": ["styles/feed-replacer.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Social Media Feed Remover"
+  },
+  "options_page": "options.html"
+}
