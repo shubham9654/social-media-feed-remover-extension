@@ -1,56 +1,77 @@
 /**
- * LinkedIn Feed Replacer
- * Replaces LinkedIn feed with inspirational quotes
+ * Quora Feed Replacer
+ * Replaces Quora feed with inspirational quotes
  */
 
 import { replaceFeed, hideElements } from '../utils/feed-replacer.js';
 
 const SELECTORS = {
-  feed: ['main[role="main"] .scaffold-finite-scroll__content', '.feed-container'],
-  suggestions: ['[aria-label*="People you may know"]', '[data-testid="people-you-may-know"]']
+  feed: [
+    '.q-box.qu-borderAll.qu-borderRadius--small.qu-bg--white',
+    '[data-testid="feed"]',
+    '.q-box[data-testid="feed"]',
+    '.ContentWrapper',
+    '.q-box.qu-px--medium'
+  ],
+  sidebar: [
+    '.q-box.qu-borderAll.qu-borderRadius--small.qu-bg--white',
+    '[data-testid="sidebar"]',
+    '.q-box.qu-px--medium.qu-py--small'
+  ],
+  suggestions: [
+    '[data-testid="suggested-follows"]',
+    '.q-box.qu-borderAll.qu-borderRadius--small'
+  ]
 };
 
 // Check if we're on the homepage
 function isHomePage() {
   const url = location.href.toLowerCase();
   const path = location.pathname.toLowerCase();
-  // Only affect homepage feed, not search, messages, profiles, etc.
-  return path === '/' || path === '/feed' || path === '/feed/' ||
-         (!url.includes('/search') && !url.includes('/messaging') && 
-          !url.includes('/in/') && !url.includes('/company/') &&
-          !url.includes('/jobs') && !url.includes('/learning') &&
+  // Only affect homepage feed, not search, questions, profiles, etc.
+  return path === '/' || path === '/home' || path === '/home/' ||
+         (!url.includes('/search') && !url.includes('/question') && 
+          !url.includes('/profile') && !url.includes('/topic') &&
+          !url.includes('/answer') && !url.includes('/spaces') &&
           !url.includes('/settings'));
 }
 
-async function initLinkedInFeedReplacer() {
+async function initQuoraFeedReplacer() {
   const settings = await getSettings();
   
   if (!settings.enabled) {
     return;
   }
   
-  const linkedinSettings = settings.platforms?.linkedin || {};
+  const quoraSettings = settings.platforms?.quora || {};
   
   // Hide feed if enabled - replace with quotes (only on homepage)
-  if (linkedinSettings.hideFeed === true && isHomePage()) {
-    if (document.querySelector('.feed-replacer-container')) return;
-    await replaceFeed([
-      'main[role="main"] .scaffold-finite-scroll__content',
-      '.scaffold-finite-scroll__content',
-      '.feed-shared-update-v2',
-      '.feed-container',
-      'main[role="main"]',
-      'div[class*="feed-shared-update-v2"]',
-      'main'
-    ], {
+  if (quoraSettings.hideFeed === true && isHomePage()) {
+    if (!document.querySelector('.feed-replacer-container')) {
+      await replaceFeed([
+        '[data-testid="feed"]',
+        '.q-box.qu-borderAll.qu-borderRadius--small.qu-bg--white',
+        '.ContentWrapper',
+        'main .q-box',
+        '.q-box[data-testid="feed"]'
+      ], {
+        checkInterval: 500,
+        maxAttempts: 30,
+        preserveStructure: false
+      });
+    }
+  }
+  
+  // Hide sidebar if enabled
+  if (quoraSettings.hideSidebar === true) {
+    hideElements(SELECTORS.sidebar, {
       checkInterval: 500,
-      maxAttempts: 25,
-      preserveStructure: false
+      maxAttempts: 20
     });
   }
   
   // Hide suggestions if enabled
-  if (linkedinSettings.hideSuggestions === true) {
+  if (quoraSettings.hideSuggestions === true) {
     hideElements(SELECTORS.suggestions, {
       checkInterval: 500,
       maxAttempts: 20
@@ -58,8 +79,8 @@ async function initLinkedInFeedReplacer() {
   }
   
   // Handle navigation (pathname + debounce, once only — no document MutationObserver)
-  if (!window.__feedReplacerNavLinkedIn) {
-    window.__feedReplacerNavLinkedIn = true;
+  if (!window.__feedReplacerNavQuora) {
+    window.__feedReplacerNavQuora = true;
     let lastPath = location.pathname;
     let navDebounce = null;
     const onNav = () => {
@@ -69,7 +90,7 @@ async function initLinkedInFeedReplacer() {
       if (navDebounce) clearTimeout(navDebounce);
       navDebounce = setTimeout(() => {
         navDebounce = null;
-        initLinkedInFeedReplacer();
+        initQuoraFeedReplacer();
       }, 400);
     };
     window.addEventListener('popstate', onNav);
@@ -89,7 +110,7 @@ async function initLinkedInFeedReplacer() {
   if (typeof chrome !== 'undefined' && chrome.storage) {
     chrome.storage.onChanged.addListener((changes, areaName) => {
       if (areaName === 'local') {
-        setTimeout(initLinkedInFeedReplacer, 100);
+        setTimeout(initQuoraFeedReplacer, 100);
       }
     });
   }
@@ -112,8 +133,8 @@ function getSettings() {
 
 // Initialize when DOM is ready
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initLinkedInFeedReplacer);
+  document.addEventListener('DOMContentLoaded', initQuoraFeedReplacer);
 } else {
-  initLinkedInFeedReplacer();
+  initQuoraFeedReplacer();
 }
 

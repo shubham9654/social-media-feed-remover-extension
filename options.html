@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Social Media Feed Remover - Options</title>
+  <title>Social Media Feed Remover - Settings</title>
   <style>
     * {
       margin: 0;
@@ -15,114 +15,288 @@
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
       background: #f5f5f5;
       color: #333;
-      padding: 20px;
-      max-width: 900px;
+      padding: 0;
+      margin: 0;
+    }
+    
+    .container {
+      max-width: 1200px;
       margin: 0 auto;
+      padding: 20px;
     }
     
     .header {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      padding: 30px;
-      border-radius: 10px;
-      margin-bottom: 30px;
       text-align: center;
+      padding: 20px;
+      background: #f5f5f5;
     }
     
     .header h1 {
-      font-size: 28px;
-      margin-bottom: 10px;
+      font-size: 24px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 16px;
     }
     
-    .accordion {
+    .snooze-section {
       background: white;
+      padding: 16px;
       border-radius: 8px;
       margin-bottom: 16px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-      overflow: hidden;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     
-    .accordion-header {
-      padding: 20px 24px;
-      cursor: pointer;
+    .snooze-label {
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 10px;
+      color: #666;
+    }
+    
+    .snooze-buttons {
       display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-size: 18px;
-      font-weight: 600;
-      color: #667eea;
-      transition: background 0.2s;
-      user-select: none;
+      gap: 6px;
+      flex-wrap: wrap;
     }
     
-    .accordion-header:hover {
+    .snooze-btn {
+      padding: 6px 12px;
+      border: 1px solid #ddd;
+      background: white;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.2s;
+    }
+    
+    .snooze-btn:hover {
       background: #f8f9fa;
     }
     
-    .accordion-header::after {
-      content: '▼';
-      font-size: 12px;
-      transition: transform 0.3s;
-      color: #667eea;
+    .snooze-btn.active {
+      background: #FF6B35;
+      color: white;
+      border-color: #FF6B35;
     }
     
-    .accordion.active .accordion-header::after {
-      transform: rotate(180deg);
-    }
-    
-    .accordion-content {
-      max-height: 0;
-      overflow: hidden;
-      transition: max-height 0.3s ease-out;
-    }
-    
-    .accordion.active .accordion-content {
-      max-height: 2000px;
-    }
-    
-    .accordion-body {
-      padding: 0 24px 24px 24px;
-    }
-    
-    .option-item {
+    .warning-banner {
+      background: #FF6B35;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 14px 0;
+      font-size: 14px;
+    }
+    
+    .warning-banner.hidden {
+      display: none;
+    }
+    
+    .fix-permissions-btn {
+      background: rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.3);
+      color: white;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    
+    .tabs {
+      display: flex;
+      gap: 0;
+      background: white;
+      border-radius: 8px 8px 0 0;
+      padding: 0;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      overflow-x: auto;
+    }
+    
+    .tab {
+      padding: 12px 24px;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      font-size: 14px;
+      font-weight: 500;
+      color: #666;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    
+    .tab:hover {
+      background: #f8f9fa;
+    }
+    
+    .tab.active {
+      color: #FF6B35;
+      border-bottom-color: #FF6B35;
+      background: #fff;
+    }
+    
+    .tab-content {
+      display: none;
+      background: white;
+      border-radius: 0 0 8px 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      min-height: 400px;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    /* Sites Tab - Two Panel Layout */
+    .sites-layout {
+      display: flex;
+      height: 500px;
+    }
+    
+    .platforms-list {
+      width: 280px;
+      border-right: 1px solid #eee;
+      overflow-y: auto;
+      background: #fafafa;
+    }
+    
+    .platform-item {
+      padding: 10px 12px;
+      border-bottom: 1px solid #eee;
+      cursor: pointer;
+      transition: background 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      position: relative;
+    }
+    
+    .platform-item * {
+      pointer-events: auto;
+    }
+    
+    .platform-item:hover {
+      background: #f0f0f0;
+    }
+    
+    .platform-item.selected {
+      background: #fff5f0;
+      border-right: 3px solid #FF6B35;
+    }
+    
+    .platform-toggle {
+      flex-shrink: 0;
+      position: relative;
+      z-index: 1;
+    }
+    
+    .platform-info {
+      flex: 1;
+      min-width: 0;
+      position: relative;
+      z-index: 2;
+      padding-left: 4px;
+    }
+    
+    .platform-name {
+      font-weight: 500;
+      font-size: 15px;
+      margin-bottom: 4px;
+      position: relative;
+      z-index: 2;
+    }
+    
+    .platform-urls {
+      font-size: 12px;
+      color: #666;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      position: relative;
+      z-index: 2;
+    }
+    
+    .platform-details {
+      flex: 1;
+      max-width: 420px;
+      padding: 16px 20px;
+      overflow-y: auto;
+    }
+    
+    .platform-details-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    
+    .platform-details-title {
+      font-size: 18px;
+      font-weight: 600;
+    }
+    
+    .visit-site-link {
+      color: #FF6B35;
+      text-decoration: none;
+      font-size: 14px;
+    }
+    
+    .visit-site-link:hover {
+      text-decoration: underline;
+    }
+    
+    .hide-regions-title {
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 10px;
+      color: #666;
+    }
+    
+    .region-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
       border-bottom: 1px solid #eee;
     }
     
-    .option-item:last-child {
+    .region-item:last-child {
       border-bottom: none;
     }
     
-    .option-label {
+    .region-label {
       flex: 1;
     }
     
-    .option-label strong {
+    .region-label strong {
       display: block;
+      font-size: 15px;
       margin-bottom: 4px;
-      font-size: 14px;
-      color: #333;
     }
     
-    .option-label span {
-      font-size: 12px;
+    .region-label span {
+      font-size: 13px;
       color: #666;
     }
     
     .toggle-switch {
       position: relative;
-      width: 50px;
-      height: 26px;
+      width: 44px;
+      height: 24px;
       flex-shrink: 0;
+      z-index: 1;
+      pointer-events: auto;
     }
     
     .toggle-switch input {
       opacity: 0;
       width: 0;
       height: 0;
+      position: absolute;
+      z-index: 3;
     }
     
     .slider {
@@ -134,56 +308,46 @@
       bottom: 0;
       background-color: #ccc;
       transition: 0.3s;
-      border-radius: 26px;
+      border-radius: 24px;
+      z-index: 1;
+      pointer-events: auto;
     }
     
     .slider:before {
       position: absolute;
       content: "";
-      height: 20px;
-      width: 20px;
+      height: 18px;
+      width: 18px;
       left: 3px;
       bottom: 3px;
       background-color: white;
       transition: 0.3s;
       border-radius: 50%;
+      z-index: 2;
     }
     
     input:checked + .slider {
-      background-color: #667eea;
+      background-color: #FF6B35;
     }
     
     input:checked + .slider:before {
-      transform: translateX(24px);
+      transform: translateX(20px);
     }
     
-    .save-status {
-      margin-top: 15px;
-      padding: 10px;
-      border-radius: 6px;
+    .empty-state {
       text-align: center;
-      display: none;
-      font-size: 14px;
+      padding: 60px 20px;
+      color: #999;
     }
     
-    .save-status.success {
-      background: #d4edda;
-      color: #155724;
-      display: block;
+    .empty-state-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
     }
     
-    .custom-quotes-section {
-      background: white;
-      border-radius: 8px;
+    /* Quotes Tab */
+    .quotes-content {
       padding: 24px;
-      margin-bottom: 20px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
-    
-    .custom-quotes-section h2 {
-      font-size: 20px;
-      margin-bottom: 20px;
-      color: #667eea;
     }
     
     .add-quote-form {
@@ -211,7 +375,7 @@
     }
     
     .add-quote-btn {
-      background: #667eea;
+      background: #FF6B35;
       color: white;
       border: none;
       padding: 10px 20px;
@@ -223,7 +387,7 @@
     }
     
     .add-quote-btn:hover {
-      background: #5568d3;
+      background: #e55a2b;
     }
     
     .quotes-list {
@@ -236,7 +400,7 @@
       padding: 16px;
       background: #f8f9fa;
       border-radius: 6px;
-      border-left: 4px solid #667eea;
+      border-left: 4px solid #FF6B35;
       display: flex;
       justify-content: space-between;
       align-items: flex-start;
@@ -275,302 +439,143 @@
       background: #c82333;
     }
     
-    .empty-state {
+    /* Snooze Tab */
+    .snooze-content {
+      padding: 24px;
+    }
+    
+    /* Style Tab */
+    .style-content {
+      padding: 24px;
+    }
+    
+    /* About Tab */
+    .about-content {
+      padding: 24px;
+    }
+    
+    .about-content h2 {
+      margin-bottom: 16px;
+    }
+    
+    .about-content p {
+      margin-bottom: 12px;
+      line-height: 1.6;
+      color: #666;
+    }
+    
+    .save-status {
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 6px;
       text-align: center;
-      padding: 40px;
-      color: #999;
+      display: none;
       font-size: 14px;
+    }
+    
+    .save-status.success {
+      background: #d4edda;
+      color: #155724;
+      display: block;
     }
   </style>
 </head>
 <body>
-  <div class="header">
-    <h1>Social Media Feed Remover</h1>
-    <p>Customize your settings</p>
-  </div>
-  
-  <form id="optionsForm">
-    <!-- Custom Quotes Section -->
-    <div class="custom-quotes-section">
-      <h2>Custom Quotes</h2>
-      <div class="add-quote-form">
-        <textarea id="quoteText" placeholder="Enter your inspirational quote..." required></textarea>
-        <input type="text" id="quoteAuthor" placeholder="Author (optional)" />
-        <button type="button" class="add-quote-btn" id="addQuoteBtn">Add Quote</button>
-      </div>
-      <div class="quotes-list" id="quotesList">
-        <!-- Quotes will be loaded here -->
+  <div class="container">
+    <div class="header">
+      <h1>Social Media Feed Remover</h1>
+    </div>
+    
+    <div class="snooze-section">
+      <div class="snooze-label">Snooze for</div>
+      <div class="snooze-buttons">
+        <button class="snooze-btn" data-minutes="1">1m</button>
+        <button class="snooze-btn" data-minutes="2">2m</button>
+        <button class="snooze-btn" data-minutes="5">5m</button>
+        <button class="snooze-btn" data-minutes="10">10m</button>
+        <button class="snooze-btn" data-minutes="30">30m</button>
+        <button class="snooze-btn" data-minutes="60">1h</button>
+        <button class="snooze-btn" data-minutes="1440">24h</button>
       </div>
     </div>
-
-    <!-- YouTube Accordion -->
-    <div class="accordion active">
-      <div class="accordion-header">
-        <span>YouTube</span>
-      </div>
-      <div class="accordion-content">
-        <div class="accordion-body">
-          <div class="option-item">
-            <div class="option-label">
-              <strong>Hide Home Feed</strong>
-              <span>Replace homepage feed with quotes</span>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="youtube-hideHomeFeed" checked>
-              <span class="slider"></span>
-            </label>
-          </div>
-          <div class="option-item">
-            <div class="option-label">
-              <strong>Hide Shorts</strong>
-              <span>Hide YouTube Shorts section</span>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="youtube-hideShorts" checked>
-              <span class="slider"></span>
-            </label>
-          </div>
-          <div class="option-item">
-            <div class="option-label">
-              <strong>Hide Sidebar Recommendations</strong>
-              <span>Hide recommended videos in sidebar</span>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="youtube-hideSidebar" checked>
-              <span class="slider"></span>
-            </label>
-          </div>
-          <div class="option-item">
-            <div class="option-label">
-              <strong>Hide Comments</strong>
-              <span>Hide video comments section</span>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="youtube-hideComments" checked>
-              <span class="slider"></span>
-            </label>
-          </div>
-          <div class="option-item">
-            <div class="option-label">
-              <strong>Hide Explore/Guide</strong>
-              <span>Hide navigation guide menu</span>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="youtube-hideExplore" checked>
-              <span class="slider"></span>
-            </label>
-          </div>
-          <div class="option-item">
-            <div class="option-label">
-              <strong>Hide Trending</strong>
-              <span>Hide trending videos section</span>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="youtube-hideTrending" checked>
-              <span class="slider"></span>
-            </label>
-          </div>
-          <div class="option-item">
-            <div class="option-label">
-              <strong>Hide End Screen</strong>
-              <span>Hide recommendations at end of videos</span>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="youtube-hideEndScreen" checked>
-              <span class="slider"></span>
-            </label>
+    
+    <div class="warning-banner hidden" id="warningBanner">
+      <span>⚠️ Some enabled sites need more permissions to work correctly.</span>
+      <button class="fix-permissions-btn" id="fixPermissionsBtn">Fix permissions</button>
+    </div>
+    
+    <div class="tabs">
+      <button class="tab active" data-tab="sites">Sites</button>
+      <button class="tab" data-tab="snooze">Snooze</button>
+      <button class="tab" data-tab="quotes">Quotes</button>
+      <button class="tab" data-tab="style">Style</button>
+      <button class="tab" data-tab="about">About</button>
+    </div>
+    
+    <!-- Sites Tab -->
+    <div class="tab-content active" id="sitesTab">
+      <div class="sites-layout">
+        <div class="platforms-list" id="platformsList">
+          <!-- Platforms will be loaded here -->
+        </div>
+        <div class="platform-details" id="platformDetails">
+          <div class="empty-state">
+            <div class="empty-state-icon">👈</div>
+            <div>Select a platform to configure</div>
           </div>
         </div>
       </div>
     </div>
     
-    <!-- Instagram Accordion -->
-    <div class="accordion">
-      <div class="accordion-header">
-        <span>Instagram</span>
+    <!-- Snooze Tab -->
+    <div class="tab-content" id="snoozeTab">
+      <div class="snooze-content">
+        <h2>Snooze Settings</h2>
+        <p>Configure snooze functionality here.</p>
       </div>
-      <div class="accordion-content">
-        <div class="accordion-body">
-          <div class="option-item">
-            <div class="option-label">
-              <strong>Hide Feed</strong>
-              <span>Replace main feed with quotes</span>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="instagram-hideFeed" checked>
-              <span class="slider"></span>
-            </label>
-          </div>
-          <div class="option-item">
-            <div class="option-label">
-              <strong>Hide Search Feed</strong>
-              <span>Hide search/explore feed</span>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="instagram-hideSearch" checked>
-              <span class="slider"></span>
-            </label>
-          </div>
-          <div class="option-item">
-            <div class="option-label">
-              <strong>Hide Reels</strong>
-              <span>Hide Instagram Reels section</span>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="instagram-hideReels" checked>
-              <span class="slider"></span>
-            </label>
-          </div>
-          <div class="option-item">
-            <div class="option-label">
-              <strong>Hide Stories</strong>
-              <span>Hide stories section</span>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="instagram-hideStories" checked>
-              <span class="slider"></span>
-            </label>
-          </div>
+    </div>
+    
+    <!-- Quotes Tab -->
+    <div class="tab-content" id="quotesTab">
+      <div class="quotes-content">
+        <h2>Custom Quotes</h2>
+        <div class="add-quote-form">
+          <textarea id="quoteText" placeholder="Enter your inspirational quote..." required></textarea>
+          <input type="text" id="quoteAuthor" placeholder="Author (optional)" />
+          <button type="button" class="add-quote-btn" id="addQuoteBtn">Add Quote</button>
+        </div>
+        <div class="quotes-list" id="quotesList">
+          <!-- Quotes will be loaded here -->
         </div>
       </div>
     </div>
     
-    <!-- Facebook Accordion -->
-    <div class="accordion">
-      <div class="accordion-header">
-        <span>Facebook</span>
-      </div>
-      <div class="accordion-content">
-        <div class="accordion-body">
-          <div class="option-item">
-            <div class="option-label">
-              <strong>Hide News Feed</strong>
-              <span>Replace news feed with quotes</span>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="facebook-hideFeed" checked>
-              <span class="slider"></span>
-            </label>
-          </div>
-          <div class="option-item">
-            <div class="option-label">
-              <strong>Hide Stories</strong>
-              <span>Hide stories section</span>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="facebook-hideStories" checked>
-              <span class="slider"></span>
-            </label>
-          </div>
-        </div>
+    <!-- Style Tab -->
+    <div class="tab-content" id="styleTab">
+      <div class="style-content">
+        <h2>Style Settings</h2>
+        <p>Customize the appearance of quotes and feed replacements.</p>
       </div>
     </div>
     
-    <!-- Twitter/X Accordion -->
-    <div class="accordion">
-      <div class="accordion-header">
-        <span>Twitter/X</span>
-      </div>
-      <div class="accordion-content">
-        <div class="accordion-body">
-          <div class="option-item">
-            <div class="option-label">
-              <strong>Hide Timeline</strong>
-              <span>Replace timeline with quotes</span>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="twitter-hideFeed" checked>
-              <span class="slider"></span>
-            </label>
-          </div>
-          <div class="option-item">
-            <div class="option-label">
-              <strong>Hide Trends</strong>
-              <span>Hide trending topics sidebar</span>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="twitter-hideTrends" checked>
-              <span class="slider"></span>
-            </label>
-          </div>
-          <div class="option-item">
-            <div class="option-label">
-              <strong>Hide Who to Follow</strong>
-              <span>Hide suggestions sidebar</span>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="twitter-hideSuggestions" checked>
-              <span class="slider"></span>
-            </label>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <!-- LinkedIn Accordion -->
-    <div class="accordion">
-      <div class="accordion-header">
-        <span>LinkedIn</span>
-      </div>
-      <div class="accordion-content">
-        <div class="accordion-body">
-          <div class="option-item">
-            <div class="option-label">
-              <strong>Hide Feed</strong>
-              <span>Replace feed with quotes</span>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="linkedin-hideFeed" checked>
-              <span class="slider"></span>
-            </label>
-          </div>
-          <div class="option-item">
-            <div class="option-label">
-              <strong>Hide Suggestions</strong>
-              <span>Hide "People you may know" section</span>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="linkedin-hideSuggestions" checked>
-              <span class="slider"></span>
-            </label>
-          </div>
-        </div>
-      </div>
-    </div>
-    
-    <!-- Reddit Accordion -->
-    <div class="accordion">
-      <div class="accordion-header">
-        <span>Reddit</span>
-      </div>
-      <div class="accordion-content">
-        <div class="accordion-body">
-          <div class="option-item">
-            <div class="option-label">
-              <strong>Hide Feed</strong>
-              <span>Replace feed with quotes</span>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="reddit-hideFeed" checked>
-              <span class="slider"></span>
-            </label>
-          </div>
-          <div class="option-item">
-            <div class="option-label">
-              <strong>Hide Sidebar</strong>
-              <span>Hide subreddit sidebar</span>
-            </div>
-            <label class="toggle-switch">
-              <input type="checkbox" id="reddit-hideSidebar" checked>
-              <span class="slider"></span>
-            </label>
-          </div>
+    <!-- About Tab -->
+    <div class="tab-content" id="aboutTab">
+      <div class="about-content">
+        <h2>About</h2>
+        <p>Social Media Feed Remover helps you stay focused by replacing distracting social media feeds with inspirational quotes.</p>
+        <p>You can customize which platforms and features to hide, and add your own custom quotes.</p>
+        <p><strong>Version:</strong> 1.0.0</p>
+        <div style="margin-top: 30px;">
+          <a href="https://buymeacoffee.com/yourusername" target="_blank" class="coffee-btn" style="display: inline-flex; align-items: center; gap: 8px; text-decoration: none; padding: 12px 24px; background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%); color: white; border-radius: 8px; font-weight: 500; box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3); transition: all 0.2s;">
+            <span>☕</span>
+            <span>Buy me a coffee</span>
+          </a>
         </div>
       </div>
     </div>
     
     <div class="save-status" id="saveStatus"></div>
-  </form>
+  </div>
   
   <script src="options.js"></script>
 </body>

@@ -3,10 +3,16 @@
   "name": "Social Media Feed Remover",
   "version": "1.0.0",
   "description": "Remove distracting social media feeds and replace them with inspirational quotes. Stay focused, stay productive.",
+  "author": "Your Name",
+  "homepage_url": "https://github.com/yourusername/social-media-feed-remover",
   "permissions": [
     "storage",
-    "activeTab"
+    "activeTab",
+    "alarms"
   ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  },
   "host_permissions": [
     "https://www.facebook.com/*",
     "https://facebook.com/*",
@@ -20,7 +26,9 @@
     "https://www.reddit.com/*",
     "https://reddit.com/*",
     "https://www.youtube.com/*",
-    "https://youtube.com/*"
+    "https://youtube.com/*",
+    "https://www.quora.com/*",
+    "https://quora.com/*"
   ],
   "content_scripts": [
     {
@@ -75,6 +83,15 @@
         "https://youtube.com/*"
       ],
       "js": ["content/youtube.js"],
+      "css": ["styles/feed-replacer.css"],
+      "run_at": "document_idle"
+    },
+    {
+      "matches": [
+        "https://www.quora.com/*",
+        "https://quora.com/*"
+      ],
+      "js": ["content/quora.js"],
       "css": ["styles/feed-replacer.css"],
       "run_at": "document_idle"
     }

@@ -29,8 +29,8 @@ toggleInput.addEventListener('change', () => {
   });
 });
 
-// Options button handler
-document.getElementById('optionsBtn').addEventListener('click', () => {
+// Settings button handler
+document.getElementById('settingsBtn').addEventListener('click', () => {
   chrome.runtime.openOptionsPage();
 });
 

@@ -8,10 +8,30 @@ import { replaceFeed, hideElements } from '../utils/feed-replacer.js';
 // Instagram selectors
 const SELECTORS = {
   feed: ['main[role="main"]', 'article', 'section > div > div'],
+  explore: ['main[role="main"] article', '[href="/explore/"]', 'section[aria-label*="Explore"]'],
   search: ['main[role="main"] [role="main"]', 'div[role="dialog"]'],
   reels: ['a[href*="/reels/"]', '[aria-label*="Reels"]'],
   stories: ['div[role="button"][aria-label*="Story"]', 'div[role="presentation"]']
 };
+
+// Check if we're on explore page
+function isExplorePage() {
+  const url = location.href.toLowerCase();
+  const path = location.pathname.toLowerCase();
+  return url.includes('/explore') || path === '/explore' || path === '/explore/';
+}
+
+// Check if we're on the homepage
+function isHomePage() {
+  const url = location.href.toLowerCase();
+  const path = location.pathname.toLowerCase();
+  // Only affect homepage feed, not search, messages, profiles, etc.
+  return path === '/' || path === '/home' || path === '/home/' ||
+         (!url.includes('/explore') && !url.includes('/direct') && 
+          !url.includes('/messages') && !url.includes('/p/') &&
+          !url.includes('/reel/') && !url.includes('/stories/') &&
+          !url.includes('/accounts/') && !url.includes('/settings'));
+}
 
 async function initInstagramFeedReplacer() {
   const settings = await getSettings();
@@ -22,17 +42,36 @@ async function initInstagramFeedReplacer() {
   
   const instagramSettings = settings.platforms?.instagram || {};
   
-  // Hide feed if enabled
-  if (instagramSettings.hideFeed !== false) {
-    await replaceFeed('main[role="main"]', {
+  // Hide feed if enabled - replace with quotes (only on homepage)
+  if (instagramSettings.hideFeed === true && isHomePage()) {
+    if (document.querySelector('.feed-replacer-container')) return;
+    await replaceFeed([
+      'main[role="main"]',
+      'main',
+      '[role="main"]',
+      'section > main',
+      'article',
+      'main section',
+      'main > div > div > div',
+      'div[role="main"]'
+    ], {
       checkInterval: 500,
-      maxAttempts: 20,
+      maxAttempts: 25,
       preserveStructure: false
     });
   }
   
-  // Hide search feed if enabled
-  if (instagramSettings.hideSearch !== false) {
+  // Hide explore if enabled (only on explore page)
+  if (instagramSettings.hideSearch === true && isExplorePage()) {
+    await replaceFeed(SELECTORS.explore, {
+      checkInterval: 500,
+      maxAttempts: 30,
+      preserveStructure: false
+    });
+  }
+  
+  // Hide search feed if enabled (for other search pages)
+  if (instagramSettings.hideSearch === true && !isExplorePage()) {
     hideElements(SELECTORS.search, {
       checkInterval: 500,
       maxAttempts: 20
@@ -40,7 +79,7 @@ async function initInstagramFeedReplacer() {
   }
   
   // Hide reels if enabled
-  if (instagramSettings.hideReels !== false) {
+  if (instagramSettings.hideReels === true) {
     hideElements(SELECTORS.reels, {
       checkInterval: 500,
       maxAttempts: 20
@@ -48,22 +87,40 @@ async function initInstagramFeedReplacer() {
   }
   
   // Hide stories if enabled
-  if (instagramSettings.hideStories !== false) {
+  if (instagramSettings.hideStories === true) {
     hideElements(SELECTORS.stories, {
       checkInterval: 500,
       maxAttempts: 20
     });
   }
   
-  // Handle navigation changes (SPA)
-  let lastUrl = location.href;
-  new MutationObserver(() => {
-    const url = location.href;
-    if (url !== lastUrl) {
-      lastUrl = url;
-      setTimeout(initInstagramFeedReplacer, 1000);
-    }
-  }).observe(document, { subtree: true, childList: true });
+  // Handle navigation (pathname + debounce, once only)
+  if (!window.__feedReplacerNavInstagram) {
+    window.__feedReplacerNavInstagram = true;
+    let lastPath = location.pathname;
+    let navDebounce = null;
+    const onNav = () => {
+      const path = location.pathname;
+      if (path === lastPath) return;
+      lastPath = path;
+      if (navDebounce) clearTimeout(navDebounce);
+      navDebounce = setTimeout(() => {
+        navDebounce = null;
+        initInstagramFeedReplacer();
+      }, 400);
+    };
+    window.addEventListener('popstate', onNav);
+    const origPushState = history.pushState;
+    const origReplaceState = history.replaceState;
+    history.pushState = function (...args) {
+      origPushState.apply(this, args);
+      onNav();
+    };
+    history.replaceState = function (...args) {
+      origReplaceState.apply(this, args);
+      onNav();
+    };
+  }
   
   // Listen for storage changes
   if (typeof chrome !== 'undefined' && chrome.storage) {
@@ -97,7 +154,3 @@ if (document.readyState === 'loading') {
   initInstagramFeedReplacer();
 }
 
-// Re-initialize on navigation
-window.addEventListener('popstate', () => {
-  setTimeout(initInstagramFeedReplacer, 500);
-});

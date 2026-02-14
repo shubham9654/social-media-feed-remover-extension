@@ -12,7 +12,12 @@ import { getRandomQuote } from '../quotes.js';
 export async function isExtensionEnabled() {
   return new Promise((resolve) => {
     if (typeof chrome !== 'undefined' && chrome.storage) {
-      chrome.storage.local.get(['enabled'], (result) => {
+      chrome.storage.local.get(['enabled', 'snoozeUntil'], (result) => {
+        // Check if snoozed
+        if (result.snoozeUntil && result.snoozeUntil > Date.now()) {
+          resolve(false); // Extension is snoozed
+          return;
+        }
         resolve(result.enabled !== false); // Default to true
       });
     } else {
@@ -57,19 +62,16 @@ export async function replaceFeed(selectors, options = {}) {
   }
   
   const {
-    checkInterval = 1000,
-    maxAttempts = 10,
-    preserveStructure = false,
-    customContainer = null
+    checkInterval = 500,
+    maxAttempts = 25,
+    preserveStructure = false
   } = options;
 
   let attempts = 0;
   
   const attemptReplace = async () => {
-    // Re-check enabled status on each attempt
     const stillEnabled = await isExtensionEnabled();
     if (!stillEnabled) {
-      // If disabled, restore original content
       restoreFeed(selectors);
       return;
     }
@@ -79,10 +81,14 @@ export async function replaceFeed(selectors, options = {}) {
     const selectorArray = Array.isArray(selectors) ? selectors : [selectors];
     let feedElement = null;
     
-    // Try each selector until we find a match
     for (const selector of selectorArray) {
-      feedElement = document.querySelector(selector);
-      if (feedElement) break;
+      try {
+        const el = document.querySelector(selector);
+        if (el && !el.querySelector('.feed-replacer-container')) {
+          feedElement = el;
+          break;
+        }
+      } catch (_) {}
     }
     
     if (!feedElement) {
@@ -92,20 +98,10 @@ export async function replaceFeed(selectors, options = {}) {
       return;
     }
     
-    // Check if already replaced
-    if (feedElement.querySelector('.feed-replacer-container')) {
-      return;
-    }
-    
-    // Get a random quote
     const quote = await getRandomQuote();
-    
-    // Create quote element
     const quoteElement = createQuoteElement(quote);
     
-    // Replace or hide feed content
     if (preserveStructure) {
-      // Hide feed content but keep structure
       const feedChildren = Array.from(feedElement.children);
       feedChildren.forEach(child => {
         if (!child.classList.contains('feed-replacer-container')) {
@@ -114,12 +110,10 @@ export async function replaceFeed(selectors, options = {}) {
       });
       feedElement.appendChild(quoteElement);
     } else {
-      // Clear and replace
       feedElement.innerHTML = '';
       feedElement.appendChild(quoteElement);
     }
     
-    // Set up observer to handle dynamic content
     setupObserver(feedElement, selectors, options);
   };
   
@@ -148,57 +142,31 @@ function restoreFeed(selectors) {
 }
 
 /**
- * Set up MutationObserver to handle dynamically loaded content
- * @param {HTMLElement} container - Container element to observe
- * @param {string|Array<string>} selectors - CSS selectors for feed elements
- * @param {Object} options - Configuration options
+ * Set up MutationObserver: only re-apply when our quote container is removed (e.g. page re-rendered).
+ * Does NOT replace every added node - that caused flickering with Instagram/SPAs.
  */
 function setupObserver(container, selectors, options) {
-  const observer = new MutationObserver((mutations) => {
-    const selectorArray = Array.isArray(selectors) ? selectors : [selectors];
-    
-    mutations.forEach((mutation) => {
-      mutation.addedNodes.forEach((node) => {
-        if (node.nodeType === Node.ELEMENT_NODE) {
-          // Check if new feed content was added
-          for (const selector of selectorArray) {
-            if (node.matches && node.matches(selector)) {
-              getRandomQuote().then(quote => {
-                const quoteElement = createQuoteElement(quote);
-                
-                if (options.preserveStructure) {
-                  node.style.display = 'none';
-                  container.appendChild(quoteElement);
-                } else {
-                  node.innerHTML = '';
-                  node.appendChild(quoteElement);
-                }
-              });
-            }
-            
-            // Check children
-            const feedChildren = node.querySelectorAll?.(selector);
-            feedChildren?.forEach((child) => {
-              if (!child.querySelector('.feed-replacer-container')) {
-                getRandomQuote().then(quote => {
-                  const quoteElement = createQuoteElement(quote);
-                  
-                  if (options.preserveStructure) {
-                    child.style.display = 'none';
-                    container.appendChild(quoteElement);
-                  } else {
-                    child.innerHTML = '';
-                    child.appendChild(quoteElement);
-                  }
-                });
-              }
-            });
-          }
-        }
+  const selectorArray = Array.isArray(selectors) ? selectors : [selectors];
+  let reapplyTimeout = null;
+
+  const observer = new MutationObserver(() => {
+    if (!container.isConnected) return;
+    if (container.querySelector('.feed-replacer-container')) return;
+
+    if (reapplyTimeout) clearTimeout(reapplyTimeout);
+    reapplyTimeout = setTimeout(() => {
+      reapplyTimeout = null;
+      isExtensionEnabled().then((enabled) => {
+        if (!enabled) return;
+        getRandomQuote().then((quote) => {
+          const quoteElement = createQuoteElement(quote);
+          container.innerHTML = '';
+          container.appendChild(quoteElement);
+        });
       });
-    });
+    }, 300);
   });
-  
+
   observer.observe(container, {
     childList: true,
     subtree: true

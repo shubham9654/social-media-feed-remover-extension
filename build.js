@@ -63,7 +63,8 @@ const contentScripts = [
   { entry: 'content/instagram.js', outfile: 'dist/content/instagram.js' },
   { entry: 'content/linkedin.js', outfile: 'dist/content/linkedin.js' },
   { entry: 'content/reddit.js', outfile: 'dist/content/reddit.js' },
-  { entry: 'content/youtube.js', outfile: 'dist/content/youtube.js' }
+  { entry: 'content/youtube.js', outfile: 'dist/content/youtube.js' },
+  { entry: 'content/quora.js', outfile: 'dist/content/quora.js' }
 ];
 
 // Build popup script

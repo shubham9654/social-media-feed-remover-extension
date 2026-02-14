@@ -44,6 +44,18 @@ const SELECTORS = {
   ]
 };
 
+// Check if we're on the homepage
+function isHomePage() {
+  const url = location.href.toLowerCase();
+  const path = location.pathname.toLowerCase();
+  // Only affect homepage feed, not search, watch pages, channels, etc.
+  return path === '/' || path === '/feed' || path === '/feed/' ||
+         (!url.includes('/watch') && !url.includes('/search') && 
+          !url.includes('/channel') && !url.includes('/user') &&
+          !url.includes('/playlist') && !url.includes('/c/') &&
+          !url.includes('/results') && !url.includes('/shorts'));
+}
+
 async function initYouTubeFeedReplacer() {
   // Get settings
   const settings = await getSettings();
@@ -54,17 +66,19 @@ async function initYouTubeFeedReplacer() {
   
   const youtubeSettings = settings.platforms?.youtube || {};
   
-  // Hide home feed if enabled
-  if (youtubeSettings.hideHomeFeed !== false) {
-    replaceFeed(SELECTORS.homeFeed, {
-      checkInterval: 500,
-      maxAttempts: 20,
-      preserveStructure: false
-    });
+  // Hide home feed if enabled (only on homepage)
+  if (youtubeSettings.hideHomeFeed === true && isHomePage()) {
+    if (!document.querySelector('.feed-replacer-container')) {
+      await replaceFeed(SELECTORS.homeFeed, {
+        checkInterval: 500,
+        maxAttempts: 20,
+        preserveStructure: false
+      });
+    }
   }
   
   // Hide shorts if enabled
-  if (youtubeSettings.hideShorts !== false) {
+  if (youtubeSettings.hideShorts === true) {
     hideElements(SELECTORS.shorts, {
       checkInterval: 500,
       maxAttempts: 20
@@ -72,7 +86,7 @@ async function initYouTubeFeedReplacer() {
   }
   
   // Hide sidebar recommendations if enabled
-  if (youtubeSettings.hideSidebar !== false) {
+  if (youtubeSettings.hideSidebar === true) {
     hideElements(SELECTORS.sidebar, {
       checkInterval: 500,
       maxAttempts: 20
@@ -80,7 +94,7 @@ async function initYouTubeFeedReplacer() {
   }
   
   // Hide comments if enabled
-  if (youtubeSettings.hideComments !== false) {
+  if (youtubeSettings.hideComments === true) {
     hideElements(SELECTORS.comments, {
       checkInterval: 500,
       maxAttempts: 20
@@ -88,7 +102,7 @@ async function initYouTubeFeedReplacer() {
   }
   
   // Hide explore/guide if enabled
-  if (youtubeSettings.hideExplore !== false) {
+  if (youtubeSettings.hideExplore === true) {
     hideElements(SELECTORS.explore, {
       checkInterval: 500,
       maxAttempts: 20
@@ -96,7 +110,7 @@ async function initYouTubeFeedReplacer() {
   }
   
   // Hide trending if enabled
-  if (youtubeSettings.hideTrending !== false) {
+  if (youtubeSettings.hideTrending === true) {
     hideElements(SELECTORS.trending, {
       checkInterval: 500,
       maxAttempts: 20
@@ -104,24 +118,40 @@ async function initYouTubeFeedReplacer() {
   }
   
   // Hide end screen recommendations if enabled
-  if (youtubeSettings.hideEndScreen !== false) {
+  if (youtubeSettings.hideEndScreen === true) {
     hideElements(SELECTORS.endScreen, {
       checkInterval: 500,
       maxAttempts: 20
     });
   }
   
-  // Handle navigation changes (SPA)
-  let lastUrl = location.href;
-  const urlObserver = new MutationObserver(() => {
-    const url = location.href;
-    if (url !== lastUrl) {
-      lastUrl = url;
-      setTimeout(initYouTubeFeedReplacer, 1000);
-    }
-  });
-  
-  urlObserver.observe(document, { subtree: true, childList: true });
+  // Handle navigation (pathname + debounce, once only — no document MutationObserver)
+  if (!window.__feedReplacerNavYouTube) {
+    window.__feedReplacerNavYouTube = true;
+    let lastPath = location.pathname;
+    let navDebounce = null;
+    const onNav = () => {
+      const path = location.pathname;
+      if (path === lastPath) return;
+      lastPath = path;
+      if (navDebounce) clearTimeout(navDebounce);
+      navDebounce = setTimeout(() => {
+        navDebounce = null;
+        initYouTubeFeedReplacer();
+      }, 400);
+    };
+    window.addEventListener('popstate', onNav);
+    const origPushState = history.pushState;
+    const origReplaceState = history.replaceState;
+    history.pushState = function (...args) {
+      origPushState.apply(this, args);
+      onNav();
+    };
+    history.replaceState = function (...args) {
+      origReplaceState.apply(this, args);
+      onNav();
+    };
+  }
   
   // Listen for storage changes
   if (typeof chrome !== 'undefined' && chrome.storage) {
@@ -158,7 +188,3 @@ if (document.readyState === 'loading') {
   initYouTubeFeedReplacer();
 }
 
-// Re-initialize on navigation
-window.addEventListener('popstate', () => {
-  setTimeout(initYouTubeFeedReplacer, 500);
-});
