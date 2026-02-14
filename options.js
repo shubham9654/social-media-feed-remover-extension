@@ -152,39 +152,107 @@ function initTabs() {
   });
 }
 
-// Initialize snooze buttons
+let snoozeCountdownInterval = null;
+
+// Initialize snooze buttons (in Snooze tab)
 function initSnooze() {
   const snoozeButtons = document.querySelectorAll('.snooze-btn');
-  
+  const snoozeStatus = document.getElementById('snoozeStatus');
+  const snoozeStatusText = document.getElementById('snoozeStatusText');
+  const snoozeCountdown = document.getElementById('snoozeCountdown');
+  const cancelSnoozeBtn = document.getElementById('cancelSnoozeBtn');
+
+  function formatCountdown(ms) {
+    const totalSec = Math.max(0, Math.floor(ms / 1000));
+    const h = Math.floor(totalSec / 3600);
+    const m = Math.floor((totalSec % 3600) / 60);
+    const s = totalSec % 60;
+    if (h > 0) return `${h}h ${m}m ${s}s`;
+    if (m > 0) return `${m}m ${s}s`;
+    return `${s}s`;
+  }
+
+  function updateSnoozeUI(snoozeUntil) {
+    const isSnoozed = snoozeUntil && snoozeUntil > Date.now();
+    snoozeButtons.forEach(b => b.classList.remove('active'));
+
+    if (isSnoozed) {
+      snoozeStatus.classList.remove('hidden');
+      const remaining = snoozeUntil - Date.now();
+      snoozeStatusText.textContent = 'Feed blocking paused';
+      snoozeCountdown.textContent = `Resumes in ${formatCountdown(remaining)}`;
+
+      const presetMinutes = [1, 5, 10, 30, 60, 1440];
+      const totalMinutes = Math.ceil(remaining / 60000);
+      const closest = presetMinutes.reduce((a, b) =>
+        Math.abs(b - totalMinutes) < Math.abs(a - totalMinutes) ? b : a
+      );
+      snoozeButtons.forEach(btn => {
+        if (parseInt(btn.getAttribute('data-minutes')) === closest) {
+          btn.classList.add('active');
+        }
+      });
+
+      if (!snoozeCountdownInterval) {
+        snoozeCountdownInterval = setInterval(() => {
+          chrome.storage.local.get(['snoozeUntil'], (r) => {
+            if (r.snoozeUntil && r.snoozeUntil > Date.now()) {
+              snoozeCountdown.textContent = `Resumes in ${formatCountdown(r.snoozeUntil - Date.now())}`;
+            } else {
+              clearSnoozeUI();
+            }
+          });
+        }, 1000);
+      }
+    } else {
+      clearSnoozeUI();
+    }
+  }
+
+  function clearSnoozeUI() {
+    snoozeStatus.classList.add('hidden');
+    snoozeButtons.forEach(b => b.classList.remove('active'));
+    if (snoozeCountdownInterval) {
+      clearInterval(snoozeCountdownInterval);
+      snoozeCountdownInterval = null;
+    }
+  }
+
   snoozeButtons.forEach(btn => {
     btn.addEventListener('click', () => {
       const minutes = parseInt(btn.getAttribute('data-minutes'));
       const snoozeUntil = Date.now() + (minutes * 60 * 1000);
-      
-      // Remove active class from all buttons
+
       snoozeButtons.forEach(b => b.classList.remove('active'));
-      // Add active class to clicked button
       btn.classList.add('active');
-      
-      // Save snooze time
+
       chrome.storage.local.set({ snoozeUntil }, () => {
-        showSaveStatus(`Snoozed for ${minutes} minutes`, true);
+        updateSnoozeUI(snoozeUntil);
+        showSaveStatus(`Snoozed for ${minutes} minute${minutes === 1 ? '' : 's'}`, true);
+        chrome.tabs.query({ active: true }, (tabs) => {
+          if (tabs[0]) chrome.tabs.reload(tabs[0].id);
+        });
       });
     });
   });
-  
-  // Load current snooze state
-  chrome.storage.local.get(['snoozeUntil'], (result) => {
-    if (result.snoozeUntil && result.snoozeUntil > Date.now()) {
-      // Find matching button and activate it
-      const remainingMinutes = Math.ceil((result.snoozeUntil - Date.now()) / 60000);
-      // Activate closest button
-      snoozeButtons.forEach(btn => {
-        const btnMinutes = parseInt(btn.getAttribute('data-minutes'));
-        if (remainingMinutes >= btnMinutes) {
-          btn.classList.add('active');
-        }
+
+  cancelSnoozeBtn.addEventListener('click', () => {
+    chrome.storage.local.set({ snoozeUntil: null }, () => {
+      clearSnoozeUI();
+      showSaveStatus('Snooze cancelled', true);
+      chrome.tabs.query({ active: true }, (tabs) => {
+        if (tabs[0]) chrome.tabs.reload(tabs[0].id);
       });
+    });
+  });
+
+  chrome.storage.local.get(['snoozeUntil'], (result) => {
+    updateSnoozeUI(result.snoozeUntil);
+  });
+
+  chrome.storage.onChanged.addListener((changes, areaName) => {
+    if (areaName === 'local' && changes.snoozeUntil) {
+      updateSnoozeUI(changes.snoozeUntil.newValue);
     }
   });
 }

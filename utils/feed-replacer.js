@@ -174,7 +174,23 @@ function setupObserver(container, selectors, options) {
 }
 
 /**
+ * Restore elements that were hidden by hideElements (when snoozed/disabled)
+ */
+function restoreHiddenElements(selectors) {
+  const selectorArray = Array.isArray(selectors) ? selectors : [selectors];
+  selectorArray.forEach(selector => {
+    document.querySelectorAll(selector).forEach(el => {
+      if (el.hasAttribute('data-feed-remover-hidden')) {
+        el.removeAttribute('data-feed-remover-hidden');
+        el.style.display = '';
+      }
+    });
+  });
+}
+
+/**
  * Hide elements without replacing with quotes
+ * Respects snooze and extension enabled state
  * @param {string|Array<string>} selectors - CSS selector(s) for elements to hide
  * @param {Object} options - Configuration options
  */
@@ -185,14 +201,24 @@ export function hideElements(selectors, options = {}) {
   } = options;
 
   let attempts = 0;
-  
-  const attemptHide = () => {
+  let hideObserver = null;
+
+  const attemptHide = async () => {
+    const enabled = await isExtensionEnabled();
+    if (!enabled) {
+      restoreHiddenElements(selectors);
+      if (hideObserver) {
+        hideObserver.disconnect();
+        hideObserver = null;
+      }
+      return;
+    }
+
     attempts++;
-    
+
     const selectorArray = Array.isArray(selectors) ? selectors : [selectors];
     const elements = [];
-    
-    // Find all matching elements
+
     selectorArray.forEach(selector => {
       const found = document.querySelectorAll(selector);
       found.forEach(el => {
@@ -201,40 +227,43 @@ export function hideElements(selectors, options = {}) {
         }
       });
     });
-    
+
     if (elements.length === 0) {
       if (attempts < maxAttempts) {
         setTimeout(attemptHide, checkInterval);
       }
       return;
     }
-    
-    // Hide elements
+
     elements.forEach(element => {
       element.setAttribute('data-feed-remover-hidden', 'true');
       element.style.display = 'none';
     });
-    
-    // Set up observer to handle dynamically added elements
-    setupHideObserver(selectors);
-    
-    // Continue checking for more elements
+
+    if (!hideObserver) {
+      hideObserver = setupHideObserver(selectors);
+    }
+
     if (attempts < maxAttempts) {
       setTimeout(attemptHide, checkInterval);
     }
   };
-  
+
   attemptHide();
 }
 
 /**
  * Set up observer for hiding dynamically added elements
  * @param {string|Array<string>} selectors - CSS selectors
+ * @returns {MutationObserver}
  */
 function setupHideObserver(selectors) {
   const selectorArray = Array.isArray(selectors) ? selectors : [selectors];
-  
-  const observer = new MutationObserver(() => {
+
+  const observer = new MutationObserver(async () => {
+    const enabled = await isExtensionEnabled();
+    if (!enabled) return;
+
     selectorArray.forEach(selector => {
       const elements = document.querySelectorAll(selector);
       elements.forEach(element => {
@@ -245,11 +274,13 @@ function setupHideObserver(selectors) {
       });
     });
   });
-  
+
   observer.observe(document.body, {
     childList: true,
     subtree: true
   });
+
+  return observer;
 }
 
 /**

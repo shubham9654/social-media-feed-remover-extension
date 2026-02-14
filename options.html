@@ -38,47 +38,6 @@
       margin-bottom: 16px;
     }
     
-    .snooze-section {
-      background: white;
-      padding: 16px;
-      border-radius: 8px;
-      margin-bottom: 16px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-    
-    .snooze-label {
-      font-size: 13px;
-      font-weight: 500;
-      margin-bottom: 10px;
-      color: #666;
-    }
-    
-    .snooze-buttons {
-      display: flex;
-      gap: 6px;
-      flex-wrap: wrap;
-    }
-    
-    .snooze-btn {
-      padding: 6px 12px;
-      border: 1px solid #ddd;
-      background: white;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 12px;
-      transition: all 0.2s;
-    }
-    
-    .snooze-btn:hover {
-      background: #f8f9fa;
-    }
-    
-    .snooze-btn.active {
-      background: #FF6B35;
-      color: white;
-      border-color: #FF6B35;
-    }
-    
     .warning-banner {
       background: #FF6B35;
       color: white;
@@ -443,6 +402,117 @@
     .snooze-content {
       padding: 24px;
     }
+
+    .snooze-header {
+      margin-bottom: 24px;
+    }
+
+    .snooze-header h2 {
+      font-size: 20px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 8px;
+    }
+
+    .snooze-header p {
+      font-size: 14px;
+      color: #666;
+      line-height: 1.5;
+    }
+
+    .snooze-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 24px;
+      color: white;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+
+    .snooze-card-label {
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 12px;
+      opacity: 0.95;
+    }
+
+    .snooze-buttons {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+    }
+
+    .snooze-btn {
+      padding: 10px 18px;
+      border: 2px solid rgba(255, 255, 255, 0.4);
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+      color: white;
+      transition: all 0.2s ease;
+      backdrop-filter: blur(4px);
+    }
+
+    .snooze-btn:hover {
+      background: rgba(255, 255, 255, 0.25);
+      border-color: rgba(255, 255, 255, 0.6);
+      transform: translateY(-1px);
+    }
+
+    .snooze-btn.active {
+      background: white;
+      color: #764ba2;
+      border-color: white;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    }
+
+    .snooze-status {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      margin-top: 16px;
+      min-height: 52px;
+      backdrop-filter: blur(4px);
+    }
+
+    .snooze-status.hidden {
+      display: none;
+    }
+
+    .snooze-status-text {
+      font-size: 14px;
+      font-weight: 500;
+    }
+
+    .snooze-countdown {
+      font-size: 13px;
+      opacity: 0.9;
+    }
+
+    .cancel-snooze-btn {
+      padding: 8px 16px;
+      background: rgba(255, 255, 255, 0.9);
+      color: #764ba2;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      flex-shrink: 0;
+      margin-left: 12px;
+    }
+
+    .cancel-snooze-btn:hover {
+      background: white;
+      transform: translateY(-1px);
+    }
     
     /* Style Tab */
     .style-content {
@@ -486,19 +556,6 @@
       <h1>Social Media Feed Remover</h1>
     </div>
     
-    <div class="snooze-section">
-      <div class="snooze-label">Snooze for</div>
-      <div class="snooze-buttons">
-        <button class="snooze-btn" data-minutes="1">1m</button>
-        <button class="snooze-btn" data-minutes="2">2m</button>
-        <button class="snooze-btn" data-minutes="5">5m</button>
-        <button class="snooze-btn" data-minutes="10">10m</button>
-        <button class="snooze-btn" data-minutes="30">30m</button>
-        <button class="snooze-btn" data-minutes="60">1h</button>
-        <button class="snooze-btn" data-minutes="1440">24h</button>
-      </div>
-    </div>
-    
     <div class="warning-banner hidden" id="warningBanner">
       <span>⚠️ Some enabled sites need more permissions to work correctly.</span>
       <button class="fix-permissions-btn" id="fixPermissionsBtn">Fix permissions</button>
@@ -530,8 +587,28 @@
     <!-- Snooze Tab -->
     <div class="tab-content" id="snoozeTab">
       <div class="snooze-content">
-        <h2>Snooze Settings</h2>
-        <p>Configure snooze functionality here.</p>
+        <div class="snooze-header">
+          <h2>Pause Feed Blocking</h2>
+          <p>Temporarily show feeds on all sites. Perfect when you need a quick break or want to browse without restrictions.</p>
+        </div>
+        <div class="snooze-card">
+          <div class="snooze-card-label">Snooze for</div>
+          <div class="snooze-buttons">
+            <button class="snooze-btn" data-minutes="1">1 min</button>
+            <button class="snooze-btn" data-minutes="5">5 min</button>
+            <button class="snooze-btn" data-minutes="10">10 min</button>
+            <button class="snooze-btn" data-minutes="30">30 min</button>
+            <button class="snooze-btn" data-minutes="60">1 hour</button>
+            <button class="snooze-btn" data-minutes="1440">24 hours</button>
+          </div>
+          <div class="snooze-status hidden" id="snoozeStatus">
+            <div>
+              <div class="snooze-status-text" id="snoozeStatusText">Snoozed</div>
+              <div class="snooze-countdown" id="snoozeCountdown"></div>
+            </div>
+            <button type="button" class="cancel-snooze-btn" id="cancelSnoozeBtn">Cancel snooze</button>
+          </div>
+        </div>
       </div>
     </div>
     
@@ -566,7 +643,7 @@
         <p>You can customize which platforms and features to hide, and add your own custom quotes.</p>
         <p><strong>Version:</strong> 1.0.0</p>
         <div style="margin-top: 30px;">
-          <a href="https://buymeacoffee.com/yourusername" target="_blank" class="coffee-btn" style="display: inline-flex; align-items: center; gap: 8px; text-decoration: none; padding: 12px 24px; background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%); color: white; border-radius: 8px; font-weight: 500; box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3); transition: all 0.2s;">
+          <a href="https://buymeacoffee.com/shubhamsarkar" target="_blank" class="coffee-btn" style="display: inline-flex; align-items: center; gap: 8px; text-decoration: none; padding: 12px 24px; background: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 100%); color: white; border-radius: 8px; font-weight: 500; box-shadow: 0 2px 8px rgba(255, 107, 107, 0.3); transition: all 0.2s;">
             <span>☕</span>
             <span>Buy me a coffee</span>
           </a>

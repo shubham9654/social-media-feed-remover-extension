@@ -153,6 +153,78 @@
     .coffee-btn:active {
       transform: translateY(0);
     }
+
+    .snooze-section {
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(10px);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .snooze-label {
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 10px;
+      opacity: 0.95;
+    }
+
+    .snooze-buttons {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .snooze-btn {
+      padding: 8px 14px;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      color: white;
+      transition: all 0.2s ease;
+    }
+
+    .snooze-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+      border-color: rgba(255, 255, 255, 0.6);
+    }
+
+    .snooze-btn.active {
+      background: rgba(76, 175, 80, 0.8);
+      border-color: rgba(76, 175, 80, 0.9);
+    }
+
+    .snooze-status {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid rgba(255, 255, 255, 0.2);
+      font-size: 12px;
+    }
+
+    .snooze-status.hidden {
+      display: none;
+    }
+
+    .cancel-snooze-btn {
+      padding: 4px 10px;
+      background: rgba(255, 255, 255, 0.3);
+      border: none;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 500;
+      color: white;
+      cursor: pointer;
+    }
+
+    .cancel-snooze-btn:hover {
+      background: rgba(255, 255, 255, 0.4);
+    }
   </style>
 </head>
 <body>
@@ -169,13 +241,26 @@
       </label>
     </div>
   </div>
+
+  <div class="snooze-section" id="snoozeSection">
+    <div class="snooze-label">Quick snooze</div>
+    <div class="snooze-buttons">
+      <button class="snooze-btn" data-minutes="5">5m</button>
+      <button class="snooze-btn" data-minutes="30">30m</button>
+      <button class="snooze-btn" data-minutes="60">1h</button>
+    </div>
+    <div class="snooze-status hidden" id="snoozeStatus">
+      <span id="snoozeStatusText"></span>
+      <button type="button" class="cancel-snooze-btn" id="cancelSnoozeBtn">Cancel</button>
+    </div>
+  </div>
   
   <button class="settings-btn" id="settingsBtn">
     <span>⚙️</span>
     <span>Settings</span>
   </button>
   
-  <a href="https://buymeacoffee.com/shubhamsarkar" target="_blank" class="coffee-btn" id="coffeeBtn">
+  <a href="https://buymeacoffee.com/shubhamsarkar" target="_blank" rel="noopener noreferrer" class="coffee-btn" id="coffeeBtn">
     <span>☕</span>
     <span>Buy me a coffee</span>
   </a>
