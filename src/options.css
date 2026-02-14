@@ -1,0 +1,41 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply m-0 p-0 box-border;
+  }
+  button:focus,
+  input:focus,
+  a:focus {
+    @apply outline-none;
+  }
+}
+
+@layer components {
+  /* Toggle switch - contained to prevent overlap */
+  .toggle-switch {
+    @apply relative w-11 h-6 shrink-0 block overflow-hidden;
+  }
+  .toggle-switch input {
+    @apply opacity-0 w-0 h-0 absolute z-10 outline-none appearance-none;
+  }
+  .toggle-switch input:focus,
+  .toggle-switch input:focus-visible {
+    @apply outline-none;
+  }
+  .slider {
+    @apply absolute cursor-pointer inset-0 bg-gray-300 rounded-full transition-all duration-300 z-[1];
+  }
+  .slider::before {
+    content: "";
+    @apply absolute h-[18px] w-[18px] left-[3px] bottom-[3px] bg-white rounded-full transition-all duration-300 z-[2];
+  }
+  input:checked + .slider {
+    @apply bg-primary;
+  }
+  input:checked + .slider::before {
+    transform: translateX(20px);
+  }
+}

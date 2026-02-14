@@ -6,22 +6,39 @@
 import { getRandomQuote } from '../quotes.js';
 
 /**
+ * Check if extension context is still valid (not invalidated by reload/update)
+ * @returns {boolean}
+ */
+function isContextValid() {
+  try {
+    return typeof chrome !== 'undefined' && !!chrome?.runtime?.id;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Check if extension is enabled
  * @returns {Promise<boolean>} True if enabled
  */
 export async function isExtensionEnabled() {
+  if (!isContextValid()) return true; // Default to enabled when context invalid
   return new Promise((resolve) => {
-    if (typeof chrome !== 'undefined' && chrome.storage) {
-      chrome.storage.local.get(['enabled', 'snoozeUntil'], (result) => {
-        // Check if snoozed
-        if (result.snoozeUntil && result.snoozeUntil > Date.now()) {
-          resolve(false); // Extension is snoozed
-          return;
-        }
-        resolve(result.enabled !== false); // Default to true
-      });
-    } else {
-      resolve(true); // Default to enabled if storage not available
+    try {
+      if (typeof chrome !== 'undefined' && chrome.storage) {
+        chrome.storage.local.get(['enabled', 'snoozeUntil'], (result) => {
+          if (!isContextValid()) { resolve(true); return; }
+          if (result?.snoozeUntil && result.snoozeUntil > Date.now()) {
+            resolve(false);
+            return;
+          }
+          resolve(result?.enabled !== false);
+        });
+      } else {
+        resolve(true);
+      }
+    } catch {
+      resolve(true);
     }
   });
 }

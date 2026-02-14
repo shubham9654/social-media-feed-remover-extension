@@ -7,6 +7,7 @@ import esbuild from 'esbuild';
 import { readdirSync, statSync, mkdirSync, copyFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { spawnSync } from 'child_process';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -26,7 +27,8 @@ function copyStaticFiles() {
     'popup.html',
     'options.html',
     'background.js',
-    'styles/feed-replacer.css'
+    'styles/feed-replacer.css',
+    'styles/options.css'
   ];
   
   staticFiles.forEach(file => {
@@ -82,8 +84,22 @@ const buildOptions = {
   platform: 'browser'
 };
 
+// Run Tailwind CSS build
+function buildTailwind() {
+  const result = spawnSync('npx', ['tailwindcss', '-i', 'src/options.css', '-o', 'styles/options.css', '--minify'], {
+    cwd: __dirname,
+    stdio: 'inherit',
+    shell: true
+  });
+  if (result.status !== 0) {
+    throw new Error('Tailwind CSS build failed');
+  }
+}
+
 async function build() {
   console.log('Building extension...');
+  
+  buildTailwind();
   
   // Ensure content directory exists
   const contentDir = join(distDir, 'content');

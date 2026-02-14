@@ -17,6 +17,7 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "esbuild": "^0.19.12"
+    "esbuild": "^0.19.12",
+    "tailwindcss": "^3.4.19"
   }
 }

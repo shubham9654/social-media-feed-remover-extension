@@ -147,17 +147,35 @@ export const quotes = [
 ];
 
 /**
+ * Check if extension context is still valid
+ * @returns {boolean}
+ */
+function isContextValid() {
+  try {
+    return typeof chrome !== 'undefined' && !!chrome?.runtime?.id;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Get all quotes (default + custom)
  * @returns {Promise<Array>} Array of quote objects
  */
 async function getAllQuotes() {
+  if (!isContextValid()) return [...quotes];
   return new Promise((resolve) => {
-    if (typeof chrome !== 'undefined' && chrome.storage) {
-      chrome.storage.local.get(['customQuotes'], (result) => {
-        const customQuotes = result.customQuotes || [];
-        resolve([...quotes, ...customQuotes]);
-      });
-    } else {
+    try {
+      if (typeof chrome !== 'undefined' && chrome.storage) {
+        chrome.storage.local.get(['customQuotes'], (result) => {
+          if (!isContextValid()) { resolve(quotes); return; }
+          const customQuotes = result?.customQuotes || [];
+          resolve([...quotes, ...customQuotes]);
+        });
+      } else {
+        resolve(quotes);
+      }
+    } catch {
       resolve(quotes);
     }
   });

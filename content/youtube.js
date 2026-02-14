@@ -4,6 +4,7 @@
  */
 
 import { hideElements, replaceFeed } from '../utils/feed-replacer.js';
+import { getSettings, addStorageListener } from '../utils/chrome-helpers.js';
 
 // YouTube selectors for different sections
 const SELECTORS = {
@@ -154,31 +155,7 @@ async function initYouTubeFeedReplacer() {
   }
   
   // Listen for storage changes
-  if (typeof chrome !== 'undefined' && chrome.storage) {
-    chrome.storage.onChanged.addListener((changes, areaName) => {
-      if (areaName === 'local') {
-        setTimeout(initYouTubeFeedReplacer, 100);
-      }
-    });
-  }
-}
-
-/**
- * Get extension settings
- */
-function getSettings() {
-  return new Promise((resolve) => {
-    if (typeof chrome !== 'undefined' && chrome.storage) {
-      chrome.storage.local.get(['enabled', 'platforms'], (result) => {
-        resolve({
-          enabled: result.enabled !== false,
-          platforms: result.platforms || {}
-        });
-      });
-    } else {
-      resolve({ enabled: true, platforms: {} });
-    }
-  });
+  addStorageListener(() => setTimeout(initYouTubeFeedReplacer, 100));
 }
 
 // Initialize when DOM is ready

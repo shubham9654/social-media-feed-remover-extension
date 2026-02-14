@@ -4,6 +4,7 @@
  */
 
 import { replaceFeed, hideElements } from '../utils/feed-replacer.js';
+import { getSettings, addStorageListener } from '../utils/chrome-helpers.js';
 
 const SELECTORS = {
   feed: ['[data-testid="primaryColumn"]', '[data-testid="homeTimeline"]'],
@@ -111,29 +112,7 @@ async function initTwitterFeedReplacer() {
     };
   }
   
-  // Listen for storage changes
-  if (typeof chrome !== 'undefined' && chrome.storage) {
-    chrome.storage.onChanged.addListener((changes, areaName) => {
-      if (areaName === 'local') {
-        setTimeout(initTwitterFeedReplacer, 100);
-      }
-    });
-  }
-}
-
-function getSettings() {
-  return new Promise((resolve) => {
-    if (typeof chrome !== 'undefined' && chrome.storage) {
-      chrome.storage.local.get(['enabled', 'platforms'], (result) => {
-        resolve({
-          enabled: result.enabled !== false,
-          platforms: result.platforms || {}
-        });
-      });
-    } else {
-      resolve({ enabled: true, platforms: {} });
-    }
-  });
+  addStorageListener(() => setTimeout(initTwitterFeedReplacer, 100));
 }
 
 // Initialize when DOM is ready

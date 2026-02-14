@@ -5,33 +5,45 @@
 
 let isEnabled = true;
 
+function safeChrome(cb) {
+  try {
+    if (typeof chrome !== 'undefined' && chrome?.runtime?.id) {
+      cb();
+    }
+  } catch {
+    // Extension context invalidated (e.g. during reload)
+  }
+}
+
 // Load current status
-chrome.storage.local.get(['enabled'], (result) => {
-  isEnabled = result.enabled !== false; // Default to true
-  updateUI();
+safeChrome(() => {
+  chrome.storage.local.get(['enabled'], (result) => {
+    try {
+      isEnabled = result?.enabled !== false;
+      updateUI();
+    } catch { updateUI(); }
+  });
 });
 
 // Toggle switch handler with auto-save
 const toggleInput = document.getElementById('toggleInput');
 toggleInput.addEventListener('change', () => {
   isEnabled = toggleInput.checked;
-  
-  // Auto-save immediately
-  chrome.storage.local.set({ enabled: isEnabled }, () => {
-    updateUI();
-    
-    // Reload current tab to apply changes
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0]) {
-        chrome.tabs.reload(tabs[0].id);
-      }
+  safeChrome(() => {
+    chrome.storage.local.set({ enabled: isEnabled }, () => {
+      try { updateUI(); } catch {}
+      safeChrome(() => {
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+          try { if (tabs?.[0]) chrome.tabs.reload(tabs[0].id); } catch {}
+        });
+      });
     });
   });
 });
 
 // Settings button handler
 document.getElementById('settingsBtn').addEventListener('click', () => {
-  chrome.runtime.openOptionsPage();
+  safeChrome(() => chrome.runtime.openOptionsPage());
 });
 
 // Snooze handlers
@@ -70,26 +82,36 @@ document.querySelectorAll('.snooze-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const minutes = parseInt(btn.getAttribute('data-minutes'));
     const snoozeUntil = Date.now() + (minutes * 60 * 1000);
-    chrome.storage.local.set({ snoozeUntil }, () => {
-      updateSnoozeUI(snoozeUntil);
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        if (tabs[0]) chrome.tabs.reload(tabs[0].id);
+    safeChrome(() => {
+      chrome.storage.local.set({ snoozeUntil }, () => {
+        try { updateSnoozeUI(snoozeUntil); } catch {}
+        safeChrome(() => {
+          chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+            try { if (tabs?.[0]) chrome.tabs.reload(tabs[0].id); } catch {}
+          });
+        });
       });
     });
   });
 });
 
 document.getElementById('cancelSnoozeBtn').addEventListener('click', () => {
-  chrome.storage.local.set({ snoozeUntil: null }, () => {
-    updateSnoozeUI(null);
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0]) chrome.tabs.reload(tabs[0].id);
+  safeChrome(() => {
+    chrome.storage.local.set({ snoozeUntil: null }, () => {
+      try { updateSnoozeUI(null); } catch {}
+      safeChrome(() => {
+        chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+          try { if (tabs?.[0]) chrome.tabs.reload(tabs[0].id); } catch {}
+        });
+      });
     });
   });
 });
 
-chrome.storage.local.get(['snoozeUntil'], (result) => {
-  updateSnoozeUI(result.snoozeUntil);
+safeChrome(() => {
+  chrome.storage.local.get(['snoozeUntil'], (result) => {
+    try { updateSnoozeUI(result?.snoozeUntil); } catch {}
+  });
 });
 
 function updateUI() {

@@ -3,6 +3,16 @@
  * Handles settings UI and storage with auto-save
  */
 
+function safeChrome(cb) {
+  try {
+    if (typeof chrome !== 'undefined' && chrome?.runtime?.id) {
+      return cb();
+    }
+  } catch {
+    // Extension context invalidated
+  }
+}
+
 // Default settings - hide main feed ON, everything else OFF
 const defaultSettings = {
   enabled: true,
@@ -195,12 +205,16 @@ function initSnooze() {
 
       if (!snoozeCountdownInterval) {
         snoozeCountdownInterval = setInterval(() => {
-          chrome.storage.local.get(['snoozeUntil'], (r) => {
-            if (r.snoozeUntil && r.snoozeUntil > Date.now()) {
-              snoozeCountdown.textContent = `Resumes in ${formatCountdown(r.snoozeUntil - Date.now())}`;
-            } else {
-              clearSnoozeUI();
-            }
+          safeChrome(() => {
+            chrome.storage.local.get(['snoozeUntil'], (r) => {
+              try {
+                if (r?.snoozeUntil && r.snoozeUntil > Date.now()) {
+                  snoozeCountdown.textContent = `Resumes in ${formatCountdown(r.snoozeUntil - Date.now())}`;
+                } else {
+                  clearSnoozeUI();
+                }
+              } catch { clearSnoozeUI(); }
+            });
           });
         }, 1000);
       }
@@ -226,34 +240,46 @@ function initSnooze() {
       snoozeButtons.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
 
-      chrome.storage.local.set({ snoozeUntil }, () => {
-        updateSnoozeUI(snoozeUntil);
-        showSaveStatus(`Snoozed for ${minutes} minute${minutes === 1 ? '' : 's'}`, true);
-        chrome.tabs.query({ active: true }, (tabs) => {
-          if (tabs[0]) chrome.tabs.reload(tabs[0].id);
+      safeChrome(() => {
+        chrome.storage.local.set({ snoozeUntil }, () => {
+          try { updateSnoozeUI(snoozeUntil); showSaveStatus(`Snoozed for ${minutes} minute${minutes === 1 ? '' : 's'}`, true); } catch {}
+          safeChrome(() => {
+            chrome.tabs.query({ active: true }, (tabs) => {
+              try { if (tabs?.[0]) chrome.tabs.reload(tabs[0].id); } catch {}
+            });
+          });
         });
       });
     });
   });
 
   cancelSnoozeBtn.addEventListener('click', () => {
-    chrome.storage.local.set({ snoozeUntil: null }, () => {
-      clearSnoozeUI();
-      showSaveStatus('Snooze cancelled', true);
-      chrome.tabs.query({ active: true }, (tabs) => {
-        if (tabs[0]) chrome.tabs.reload(tabs[0].id);
+    safeChrome(() => {
+      chrome.storage.local.set({ snoozeUntil: null }, () => {
+        try { clearSnoozeUI(); showSaveStatus('Snooze cancelled', true); } catch {}
+        safeChrome(() => {
+          chrome.tabs.query({ active: true }, (tabs) => {
+            try { if (tabs?.[0]) chrome.tabs.reload(tabs[0].id); } catch {}
+          });
+        });
       });
     });
   });
 
-  chrome.storage.local.get(['snoozeUntil'], (result) => {
-    updateSnoozeUI(result.snoozeUntil);
+  safeChrome(() => {
+    chrome.storage.local.get(['snoozeUntil'], (result) => {
+      try { updateSnoozeUI(result?.snoozeUntil); } catch {}
+    });
   });
 
-  chrome.storage.onChanged.addListener((changes, areaName) => {
-    if (areaName === 'local' && changes.snoozeUntil) {
-      updateSnoozeUI(changes.snoozeUntil.newValue);
-    }
+  safeChrome(() => {
+    chrome.storage?.onChanged?.addListener((changes, areaName) => {
+      try {
+        if (areaName === 'local' && changes?.snoozeUntil) {
+          updateSnoozeUI(changes.snoozeUntil.newValue);
+        }
+      } catch {}
+    });
   });
 }
 
@@ -271,15 +297,15 @@ function renderPlatformList() {
     
     return `
       <div class="platform-item ${selectedPlatform === platformId ? 'selected' : ''}" data-platform="${platformId}">
+        <div class="platform-info">
+          <div class="platform-name">${config.name}</div>
+          <div class="platform-urls">${config.urls.join(', ')}</div>
+        </div>
         <div class="platform-toggle">
           <label class="toggle-switch">
             <input type="checkbox" class="platform-toggle-input" data-platform="${platformId}" ${isEnabled ? 'checked' : ''}>
             <span class="slider"></span>
           </label>
-        </div>
-        <div class="platform-info">
-          <div class="platform-name">${config.name}</div>
-          <div class="platform-urls">${config.urls.join(', ')}</div>
         </div>
       </div>
     `;
@@ -326,10 +352,14 @@ function renderPlatformList() {
       
       Object.assign(currentSettings.platforms[platformId], updates);
       
-      chrome.storage.local.set(currentSettings, () => {
-        renderPlatformDetails(platformId);
-        renderPlatformList();
-        showSaveStatus('Settings saved!', true);
+      safeChrome(() => {
+        chrome.storage.local.set(currentSettings, () => {
+          try {
+            renderPlatformDetails(platformId);
+            renderPlatformList();
+            showSaveStatus('Settings saved!', true);
+          } catch {}
+        });
       });
     });
   });
@@ -383,9 +413,13 @@ function renderPlatformDetails(platformId) {
         
         currentSettings.platforms[platformId][region.id] = checkbox.checked;
         
-        chrome.storage.local.set(currentSettings, () => {
-          renderPlatformList();
-          showSaveStatus('Settings saved!', true);
+        safeChrome(() => {
+          chrome.storage.local.set(currentSettings, () => {
+            try {
+              renderPlatformList();
+              showSaveStatus('Settings saved!', true);
+            } catch {}
+          });
         });
       });
     }
@@ -394,23 +428,32 @@ function renderPlatformDetails(platformId) {
 
 // Load settings
 function loadSettings() {
-  chrome.storage.local.get(['enabled', 'platforms', 'customQuotes', 'snoozeUntil'], (result) => {
+  const applySettings = (result = {}) => {
     currentSettings = {
-      enabled: result.enabled !== false,
-      platforms: result.platforms || defaultSettings.platforms,
-      customQuotes: result.customQuotes || [],
-      snoozeUntil: result.snoozeUntil || null
+      enabled: result?.enabled !== false,
+      platforms: result?.platforms || defaultSettings.platforms,
+      customQuotes: result?.customQuotes || [],
+      snoozeUntil: result?.snoozeUntil || null
     };
-    
-    // Select first platform by default
     if (!selectedPlatform) {
       selectedPlatform = Object.keys(platformConfig)[0];
     }
-    
     renderPlatformList();
     renderPlatformDetails(selectedPlatform);
     loadCustomQuotes(currentSettings.customQuotes);
-  });
+  };
+
+  try {
+    if (typeof chrome !== 'undefined' && chrome?.storage) {
+      chrome.storage.local.get(['enabled', 'platforms', 'customQuotes', 'snoozeUntil'], (result) => {
+        try { applySettings(result); } catch { applySettings(); }
+      });
+    } else {
+      applySettings();
+    }
+  } catch {
+    applySettings(); // Context invalidated
+  }
 }
 
 // Show save status
@@ -469,11 +512,15 @@ function addCustomQuote() {
   
   currentSettings.customQuotes = customQuotes;
   
-  chrome.storage.local.set({ customQuotes }, () => {
-    document.getElementById('quoteText').value = '';
-    document.getElementById('quoteAuthor').value = '';
-    loadCustomQuotes(customQuotes);
-    showSaveStatus('Quote added!', true);
+  safeChrome(() => {
+    chrome.storage.local.set({ customQuotes }, () => {
+      try {
+        document.getElementById('quoteText').value = '';
+        document.getElementById('quoteAuthor').value = '';
+        loadCustomQuotes(customQuotes);
+        showSaveStatus('Quote added!', true);
+      } catch {}
+    });
   });
 }
 
@@ -483,9 +530,13 @@ function deleteCustomQuote(index) {
   
   currentSettings.customQuotes = customQuotes;
   
-  chrome.storage.local.set({ customQuotes }, () => {
-    loadCustomQuotes(customQuotes);
-    showSaveStatus('Quote deleted!', true);
+  safeChrome(() => {
+    chrome.storage.local.set({ customQuotes }, () => {
+      try {
+        loadCustomQuotes(customQuotes);
+        showSaveStatus('Quote deleted!', true);
+      } catch {}
+    });
   });
 }
 
