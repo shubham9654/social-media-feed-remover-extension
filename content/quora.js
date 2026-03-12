@@ -4,24 +4,20 @@
  */
 
 import { replaceFeed, hideElements } from '../utils/feed-replacer.js';
-import { getSettings, addStorageListener } from '../utils/chrome-helpers.js';
+import { getSettings, addStorageListener, setupNavigationListener, scheduleHomepageRecheck, startHomepagePolling } from '../utils/chrome-helpers.js';
 
 const SELECTORS = {
   feed: [
-    '.q-box.qu-borderAll.qu-borderRadius--small.qu-bg--white',
     '[data-testid="feed"]',
     '.q-box[data-testid="feed"]',
-    '.ContentWrapper',
-    '.q-box.qu-px--medium'
+    'main [data-testid="feed"]'
   ],
   sidebar: [
-    '.q-box.qu-borderAll.qu-borderRadius--small.qu-bg--white',
     '[data-testid="sidebar"]',
-    '.q-box.qu-px--medium.qu-py--small'
+    'main [data-testid="sidebar"]'
   ],
   suggestions: [
-    '[data-testid="suggested-follows"]',
-    '.q-box.qu-borderAll.qu-borderRadius--small'
+    '[data-testid="suggested-follows"]'
   ]
 };
 
@@ -38,31 +34,26 @@ function isHomePage() {
 }
 
 async function initQuoraFeedReplacer() {
+  setupNavigationListener('Quora', () => setTimeout(initQuoraFeedReplacer, 100));
+
   const settings = await getSettings();
-  
-  if (!settings.enabled) {
-    return;
-  }
-  
+  if (!settings.enabled) return;
+
   const quoraSettings = settings.platforms?.quora || {};
-  
-  // Hide feed if enabled - replace with quotes (only on homepage)
-  if (quoraSettings.hideFeed === true && isHomePage()) {
-    if (!document.querySelector('.feed-replacer-container')) {
-      await replaceFeed([
+  const onHome = isHomePage();
+
+  if (quoraSettings.hideFeed === true && onHome) {
+    await replaceFeed([
+        'main [data-testid="feed"]',
         '[data-testid="feed"]',
-        '.q-box.qu-borderAll.qu-borderRadius--small.qu-bg--white',
-        '.ContentWrapper',
-        'main .q-box',
         '.q-box[data-testid="feed"]'
-      ], {
-        checkInterval: 500,
-        maxAttempts: 30,
-        preserveStructure: false
-      });
-    }
+    ], {
+      checkInterval: 500,
+      maxAttempts: 30,
+      preserveStructure: false
+    });
   }
-  
+
   // Hide sidebar if enabled
   if (quoraSettings.hideSidebar === true) {
     hideElements(SELECTORS.sidebar, {
@@ -79,34 +70,9 @@ async function initQuoraFeedReplacer() {
     });
   }
   
-  // Handle navigation (pathname + debounce, once only — no document MutationObserver)
-  if (!window.__feedReplacerNavQuora) {
-    window.__feedReplacerNavQuora = true;
-    let lastPath = location.pathname;
-    let navDebounce = null;
-    const onNav = () => {
-      const path = location.pathname;
-      if (path === lastPath) return;
-      lastPath = path;
-      if (navDebounce) clearTimeout(navDebounce);
-      navDebounce = setTimeout(() => {
-        navDebounce = null;
-        initQuoraFeedReplacer();
-      }, 400);
-    };
-    window.addEventListener('popstate', onNav);
-    const origPushState = history.pushState;
-    const origReplaceState = history.replaceState;
-    history.pushState = function (...args) {
-      origPushState.apply(this, args);
-      onNav();
-    };
-    history.replaceState = function (...args) {
-      origReplaceState.apply(this, args);
-      onNav();
-    };
-  }
-  
+  scheduleHomepageRecheck(initQuoraFeedReplacer, onHome);
+  startHomepagePolling('Quora', initQuoraFeedReplacer, isHomePage);
+
   addStorageListener(() => setTimeout(initQuoraFeedReplacer, 100));
 }
 

@@ -4,7 +4,7 @@
  */
 
 import { replaceFeed, hideElements } from '../utils/feed-replacer.js';
-import { getSettings, addStorageListener } from '../utils/chrome-helpers.js';
+import { getSettings, addStorageListener, setupNavigationListener, scheduleHomepageRecheck, startHomepagePolling } from '../utils/chrome-helpers.js';
 
 const SELECTORS = {
   feed: ['shreddit-feed', '[data-testid="subreddit-posts"]'],
@@ -21,25 +21,20 @@ function isHomePage() {
 }
 
 async function initRedditFeedReplacer() {
+  setupNavigationListener('Reddit', () => setTimeout(initRedditFeedReplacer, 100));
+
   const settings = await getSettings();
-  
-  if (!settings.enabled) {
-    return;
-  }
-  
+  if (!settings.enabled) return;
+
   const redditSettings = settings.platforms?.reddit || {};
-  
-  // Hide feed if enabled - replace with quotes (only on homepage)
-  if (redditSettings.hideFeed === true && isHomePage()) {
-    if (document.querySelector('.feed-replacer-container')) return;
+  const onHome = isHomePage();
+
+  if (redditSettings.hideFeed === true && onHome) {
     await replaceFeed([
       'shreddit-feed',
       '[data-testid="subreddit-posts"]',
       '#AppRouter-main-content',
-      'faceplate-tracker',
-      'shreddit-post',
-      'div[slot="feed"]',
-      'main'
+      'div[slot="feed"]'
     ], {
       checkInterval: 500,
       maxAttempts: 25,
@@ -55,34 +50,9 @@ async function initRedditFeedReplacer() {
     });
   }
   
-  // Handle navigation (pathname + debounce, once only — no document MutationObserver)
-  if (!window.__feedReplacerNavReddit) {
-    window.__feedReplacerNavReddit = true;
-    let lastPath = location.pathname;
-    let navDebounce = null;
-    const onNav = () => {
-      const path = location.pathname;
-      if (path === lastPath) return;
-      lastPath = path;
-      if (navDebounce) clearTimeout(navDebounce);
-      navDebounce = setTimeout(() => {
-        navDebounce = null;
-        initRedditFeedReplacer();
-      }, 400);
-    };
-    window.addEventListener('popstate', onNav);
-    const origPushState = history.pushState;
-    const origReplaceState = history.replaceState;
-    history.pushState = function (...args) {
-      origPushState.apply(this, args);
-      onNav();
-    };
-    history.replaceState = function (...args) {
-      origReplaceState.apply(this, args);
-      onNav();
-    };
-  }
-  
+  scheduleHomepageRecheck(initRedditFeedReplacer, onHome);
+  startHomepagePolling('Reddit', initRedditFeedReplacer, isHomePage);
+
   addStorageListener(() => setTimeout(initRedditFeedReplacer, 100));
 }
 

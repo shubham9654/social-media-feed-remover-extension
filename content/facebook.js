@@ -4,10 +4,11 @@
  */
 
 import { replaceFeed, hideElements } from '../utils/feed-replacer.js';
-import { getSettings, addStorageListener } from '../utils/chrome-helpers.js';
+import { getSettings, addStorageListener, setupNavigationListener, scheduleHomepageRecheck, startHomepagePolling } from '../utils/chrome-helpers.js';
 
 const SELECTORS = {
-  feed: ['[role="feed"]', '[role="main"]', 'div[data-pagelet="FeedUnit"]'],
+  // Keep feed selectors tight; `[role="main"]` is too broad and can include side columns.
+  feed: ['[role="feed"]', 'div[data-pagelet="MainFeed"]', 'div[data-pagelet="FeedUnit"]'],
   explore: ['[data-pagelet="ExploreFeed"]', '[aria-label*="Explore"]', '[href*="/explore"]'],
   stories: ['[aria-label*="Story"]', '[role="article"][aria-label*="story"]']
 };
@@ -32,28 +33,24 @@ function isHomePage() {
 }
 
 async function initFacebookFeedReplacer() {
+  setupNavigationListener('Facebook', () => setTimeout(initFacebookFeedReplacer, 100));
+
   const settings = await getSettings();
-  
-  if (!settings.enabled) {
-    return;
-  }
-  
+  if (!settings.enabled) return;
+
   const facebookSettings = settings.platforms?.facebook || {};
-  
-  // Hide feed if enabled - replace with quotes (only on homepage)
-  if (facebookSettings.hideFeed === true && isHomePage()) {
-    if (document.querySelector('.feed-replacer-container')) return;
+  const onHome = isHomePage();
+
+  if (facebookSettings.hideFeed === true && onHome) {
     await replaceFeed([
       '[role="feed"]',
-      '[role="main"]',
       'div[data-pagelet="FeedUnit"]',
       '[data-pagelet="FeedUnit"]',
       'div[data-pagelet="MainFeed"]',
-      '[aria-label="Feed"]',
-      'div[role="main"]'
+      '[aria-label="Feed"]'
     ], {
       checkInterval: 500,
-      maxAttempts: 25,
+      maxAttempts: 30,
       preserveStructure: false
     });
   }
@@ -75,34 +72,9 @@ async function initFacebookFeedReplacer() {
     });
   }
   
-  // Handle navigation (pathname + debounce, once only)
-  if (!window.__feedReplacerNavFacebook) {
-    window.__feedReplacerNavFacebook = true;
-    let lastPath = location.pathname;
-    let navDebounce = null;
-    const onNav = () => {
-      const path = location.pathname;
-      if (path === lastPath) return;
-      lastPath = path;
-      if (navDebounce) clearTimeout(navDebounce);
-      navDebounce = setTimeout(() => {
-        navDebounce = null;
-        initFacebookFeedReplacer();
-      }, 400);
-    };
-    window.addEventListener('popstate', onNav);
-    const origPushState = history.pushState;
-    const origReplaceState = history.replaceState;
-    history.pushState = function (...args) {
-      origPushState.apply(this, args);
-      onNav();
-    };
-    history.replaceState = function (...args) {
-      origReplaceState.apply(this, args);
-      onNav();
-    };
-  }
-  
+  scheduleHomepageRecheck(initFacebookFeedReplacer, onHome);
+  startHomepagePolling('Facebook', initFacebookFeedReplacer, isHomePage);
+
   addStorageListener(() => setTimeout(initFacebookFeedReplacer, 100));
 }
 

@@ -4,7 +4,7 @@
  */
 
 import { hideElements, replaceFeed } from '../utils/feed-replacer.js';
-import { getSettings, addStorageListener } from '../utils/chrome-helpers.js';
+import { getSettings, addStorageListener, setupNavigationListener, scheduleHomepageRecheck, startHomepagePolling } from '../utils/chrome-helpers.js';
 
 // YouTube selectors for different sections
 const SELECTORS = {
@@ -58,24 +58,22 @@ function isHomePage() {
 }
 
 async function initYouTubeFeedReplacer() {
-  // Get settings
+  // Setup nav listener first - so we detect when user navigates back to homepage
+  setupNavigationListener('YouTube', () => setTimeout(initYouTubeFeedReplacer, 100));
+
   const settings = await getSettings();
-  
-  if (!settings.enabled) {
-    return;
-  }
-  
+  if (!settings.enabled) return;
+
   const youtubeSettings = settings.platforms?.youtube || {};
-  
-  // Hide home feed if enabled (only on homepage)
-  if (youtubeSettings.hideHomeFeed === true && isHomePage()) {
-    if (!document.querySelector('.feed-replacer-container')) {
-      await replaceFeed(SELECTORS.homeFeed, {
-        checkInterval: 500,
-        maxAttempts: 20,
-        preserveStructure: false
-      });
-    }
+  const onHome = isHomePage();
+
+  // Hide home feed if enabled (only on homepage) - always try, replaceFeed handles duplicates
+  if (youtubeSettings.hideHomeFeed === true && onHome) {
+    await replaceFeed(SELECTORS.homeFeed, {
+      checkInterval: 500,
+      maxAttempts: 30,
+      preserveStructure: false
+    });
   }
   
   // Hide shorts if enabled
@@ -126,34 +124,9 @@ async function initYouTubeFeedReplacer() {
     });
   }
   
-  // Handle navigation (pathname + debounce, once only — no document MutationObserver)
-  if (!window.__feedReplacerNavYouTube) {
-    window.__feedReplacerNavYouTube = true;
-    let lastPath = location.pathname;
-    let navDebounce = null;
-    const onNav = () => {
-      const path = location.pathname;
-      if (path === lastPath) return;
-      lastPath = path;
-      if (navDebounce) clearTimeout(navDebounce);
-      navDebounce = setTimeout(() => {
-        navDebounce = null;
-        initYouTubeFeedReplacer();
-      }, 400);
-    };
-    window.addEventListener('popstate', onNav);
-    const origPushState = history.pushState;
-    const origReplaceState = history.replaceState;
-    history.pushState = function (...args) {
-      origPushState.apply(this, args);
-      onNav();
-    };
-    history.replaceState = function (...args) {
-      origReplaceState.apply(this, args);
-      onNav();
-    };
-  }
-  
+  scheduleHomepageRecheck(initYouTubeFeedReplacer, onHome);
+  startHomepagePolling('YouTube', initYouTubeFeedReplacer, isHomePage);
+
   // Listen for storage changes
   addStorageListener(() => setTimeout(initYouTubeFeedReplacer, 100));
 }

@@ -18,7 +18,7 @@
     "https://facebook.com/*",
     "https://www.twitter.com/*",
     "https://twitter.com/*",
-    "https://x.com/*",
+    "https://x.com/*","https://www.x.com/*",
     "https://www.instagram.com/*",
     "https://instagram.com/*",
     "https://www.linkedin.com/*",
@@ -44,7 +44,7 @@
       "matches": [
         "https://www.twitter.com/*",
         "https://twitter.com/*",
-        "https://x.com/*"
+        "https://x.com/*","https://www.x.com/*"
       ],
       "js": ["content/twitter.js"],
       "css": ["styles/feed-replacer.css"],

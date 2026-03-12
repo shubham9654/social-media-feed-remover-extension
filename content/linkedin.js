@@ -4,10 +4,15 @@
  */
 
 import { replaceFeed, hideElements } from '../utils/feed-replacer.js';
-import { getSettings, addStorageListener } from '../utils/chrome-helpers.js';
+import { getSettings, addStorageListener, setupNavigationListener, scheduleHomepageRecheck, startHomepagePolling } from '../utils/chrome-helpers.js';
 
 const SELECTORS = {
-  feed: ['main[role="main"] .scaffold-finite-scroll__content', '.feed-container'],
+  // Keep this tight: do NOT target `main` or broad containers, otherwise sidebars get wiped.
+  feed: [
+    'main[role="main"] .scaffold-finite-scroll__content',
+    '.scaffold-finite-scroll__content',
+    '.feed-container'
+  ],
   suggestions: ['[aria-label*="People you may know"]', '[data-testid="people-you-may-know"]']
 };
 
@@ -24,25 +29,20 @@ function isHomePage() {
 }
 
 async function initLinkedInFeedReplacer() {
+  setupNavigationListener('LinkedIn', () => setTimeout(initLinkedInFeedReplacer, 100));
+
   const settings = await getSettings();
-  
-  if (!settings.enabled) {
-    return;
-  }
-  
+  if (!settings.enabled) return;
+
   const linkedinSettings = settings.platforms?.linkedin || {};
-  
-  // Hide feed if enabled - replace with quotes (only on homepage)
-  if (linkedinSettings.hideFeed === true && isHomePage()) {
-    if (document.querySelector('.feed-replacer-container')) return;
+  const onHome = isHomePage();
+
+  if (linkedinSettings.hideFeed === true && onHome) {
     await replaceFeed([
       'main[role="main"] .scaffold-finite-scroll__content',
       '.scaffold-finite-scroll__content',
-      '.feed-shared-update-v2',
       '.feed-container',
-      'main[role="main"]',
-      'div[class*="feed-shared-update-v2"]',
-      'main'
+      // Intentionally avoid `main` / `[role="main"]` fallbacks - they remove sidebars & nav scaffolding.
     ], {
       checkInterval: 500,
       maxAttempts: 25,
@@ -58,34 +58,9 @@ async function initLinkedInFeedReplacer() {
     });
   }
   
-  // Handle navigation (pathname + debounce, once only — no document MutationObserver)
-  if (!window.__feedReplacerNavLinkedIn) {
-    window.__feedReplacerNavLinkedIn = true;
-    let lastPath = location.pathname;
-    let navDebounce = null;
-    const onNav = () => {
-      const path = location.pathname;
-      if (path === lastPath) return;
-      lastPath = path;
-      if (navDebounce) clearTimeout(navDebounce);
-      navDebounce = setTimeout(() => {
-        navDebounce = null;
-        initLinkedInFeedReplacer();
-      }, 400);
-    };
-    window.addEventListener('popstate', onNav);
-    const origPushState = history.pushState;
-    const origReplaceState = history.replaceState;
-    history.pushState = function (...args) {
-      origPushState.apply(this, args);
-      onNav();
-    };
-    history.replaceState = function (...args) {
-      origReplaceState.apply(this, args);
-      onNav();
-    };
-  }
-  
+  scheduleHomepageRecheck(initLinkedInFeedReplacer, onHome);
+  startHomepagePolling('LinkedIn', initLinkedInFeedReplacer, isHomePage);
+
   addStorageListener(() => setTimeout(initLinkedInFeedReplacer, 100));
 }
 

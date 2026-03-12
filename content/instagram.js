@@ -4,11 +4,17 @@
  */
 
 import { replaceFeed, hideElements } from '../utils/feed-replacer.js';
-import { getSettings, addStorageListener } from '../utils/chrome-helpers.js';
+import { getSettings, addStorageListener, setupNavigationListener, scheduleHomepageRecheck, startHomepagePolling } from '../utils/chrome-helpers.js';
 
 // Instagram selectors
 const SELECTORS = {
-  feed: ['main[role="main"]', 'article', 'section > div > div'],
+  // Keep this narrow to avoid wiping right-side suggestions/sidebars.
+  // On Instagram web, the central feed is typically the `section` inside `main[role="main"]`.
+  feed: [
+    'main[role="main"] section',
+    'main[role="main"] section > div',
+    'main[role="main"] article'
+  ],
   explore: ['main[role="main"] article', '[href="/explore/"]', 'section[aria-label*="Explore"]'],
   search: ['main[role="main"] [role="main"]', 'div[role="dialog"]'],
   reels: ['a[href*="/reels/"]', '[aria-label*="Reels"]'],
@@ -35,33 +41,27 @@ function isHomePage() {
 }
 
 async function initInstagramFeedReplacer() {
+  setupNavigationListener('Instagram', () => setTimeout(initInstagramFeedReplacer, 100));
+
   const settings = await getSettings();
-  
-  if (!settings.enabled) {
-    return;
-  }
-  
+  if (!settings.enabled) return;
+
   const instagramSettings = settings.platforms?.instagram || {};
-  
-  // Hide feed if enabled - replace with quotes (only on homepage)
-  if (instagramSettings.hideFeed === true && isHomePage()) {
-    if (document.querySelector('.feed-replacer-container')) return;
+  const onHome = isHomePage();
+
+  if (instagramSettings.hideFeed === true && onHome) {
     await replaceFeed([
-      'main[role="main"]',
-      'main',
-      '[role="main"]',
-      'section > main',
-      'article',
-      'main section',
-      'main > div > div > div',
-      'div[role="main"]'
+      // Do NOT target `main` or `[role="main"]` broadly; that removes side panels/navigation.
+      'main[role="main"] section',
+      'main[role="main"] section > div',
+      'main[role="main"] article'
     ], {
       checkInterval: 500,
-      maxAttempts: 25,
+      maxAttempts: 30,
       preserveStructure: false
     });
   }
-  
+
   // Hide explore if enabled (only on explore page)
   if (instagramSettings.hideSearch === true && isExplorePage()) {
     await replaceFeed(SELECTORS.explore, {
@@ -95,34 +95,9 @@ async function initInstagramFeedReplacer() {
     });
   }
   
-  // Handle navigation (pathname + debounce, once only)
-  if (!window.__feedReplacerNavInstagram) {
-    window.__feedReplacerNavInstagram = true;
-    let lastPath = location.pathname;
-    let navDebounce = null;
-    const onNav = () => {
-      const path = location.pathname;
-      if (path === lastPath) return;
-      lastPath = path;
-      if (navDebounce) clearTimeout(navDebounce);
-      navDebounce = setTimeout(() => {
-        navDebounce = null;
-        initInstagramFeedReplacer();
-      }, 400);
-    };
-    window.addEventListener('popstate', onNav);
-    const origPushState = history.pushState;
-    const origReplaceState = history.replaceState;
-    history.pushState = function (...args) {
-      origPushState.apply(this, args);
-      onNav();
-    };
-    history.replaceState = function (...args) {
-      origReplaceState.apply(this, args);
-      onNav();
-    };
-  }
-  
+  scheduleHomepageRecheck(initInstagramFeedReplacer, onHome);
+  startHomepagePolling('Instagram', initInstagramFeedReplacer, isHomePage);
+
   addStorageListener(() => setTimeout(initInstagramFeedReplacer, 100));
 }
 
