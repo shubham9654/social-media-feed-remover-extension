@@ -6,6 +6,9 @@
 import { replaceFeed, hideElements } from '../utils/feed-replacer.js';
 import { getSettings, addStorageListener, setupNavigationListener, scheduleHomepageRecheck, startHomepagePolling } from '../utils/chrome-helpers.js';
 
+const FEED_TARGET_ATTR = 'data-feed-remover-target';
+const FEED_TARGET_VALUE = 'linkedin-feed';
+
 const SELECTORS = {
   // Keep this tight: do NOT target `main` or broad containers, otherwise sidebars get wiped.
   feed: [
@@ -17,6 +20,33 @@ const SELECTORS = {
   ],
   suggestions: ['[aria-label*="People you may know"]', '[data-testid="people-you-may-know"]']
 };
+
+function tagLinkedInFeedTarget() {
+  // 1) Preferred: actual finite scroll content (center feed list)
+  let el =
+    document.querySelector('main[role="main"] .scaffold-finite-scroll__content') ||
+    document.querySelector('div.scaffold-layout__main .scaffold-finite-scroll__content') ||
+    document.querySelector('.scaffold-finite-scroll__content');
+
+  // 2) Heuristic: find a parent container that contains multiple feed update cards
+  if (!el) {
+    const update = document.querySelector('.feed-shared-update-v2');
+    if (update) {
+      el = update.closest('.scaffold-finite-scroll__content') ||
+           update.closest('div.scaffold-layout__main') ||
+           update.closest('main[role="main"]');
+    }
+  }
+
+  // 3) Last resort (still center column): scaffold main area (avoid left/right rails)
+  if (!el) {
+    el = document.querySelector('div.scaffold-layout__main');
+  }
+
+  if (!el) return null;
+  el.setAttribute(FEED_TARGET_ATTR, FEED_TARGET_VALUE);
+  return el;
+}
 
 // Check if we're on the homepage
 function isHomePage() {
@@ -40,13 +70,10 @@ async function initLinkedInFeedReplacer() {
   const onHome = isHomePage();
 
   if (linkedinSettings.hideFeed === true && onHome) {
+    tagLinkedInFeedTarget();
     await replaceFeed([
-      'main[role="main"] .scaffold-finite-scroll__content',
-      'div.scaffold-layout__main .scaffold-finite-scroll__content',
-      '.scaffold-finite-scroll__content',
-      'div.scaffold-layout__main',
-      '.feed-container',
-      // Intentionally avoid `main` / `[role="main"]` fallbacks - they remove sidebars & nav scaffolding.
+      `[${FEED_TARGET_ATTR}="${FEED_TARGET_VALUE}"]`,
+      ...SELECTORS.feed
     ], {
       checkInterval: 500,
       maxAttempts: 60,
