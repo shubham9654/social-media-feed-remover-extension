@@ -10,7 +10,9 @@ const SELECTORS = {
   // Keep this tight: do NOT target `main` or broad containers, otherwise sidebars get wiped.
   feed: [
     'main[role="main"] .scaffold-finite-scroll__content',
+    'div.scaffold-layout__main .scaffold-finite-scroll__content',
     '.scaffold-finite-scroll__content',
+    'div.scaffold-layout__main',
     '.feed-container'
   ],
   suggestions: ['[aria-label*="People you may know"]', '[data-testid="people-you-may-know"]']
@@ -40,12 +42,14 @@ async function initLinkedInFeedReplacer() {
   if (linkedinSettings.hideFeed === true && onHome) {
     await replaceFeed([
       'main[role="main"] .scaffold-finite-scroll__content',
+      'div.scaffold-layout__main .scaffold-finite-scroll__content',
       '.scaffold-finite-scroll__content',
+      'div.scaffold-layout__main',
       '.feed-container',
       // Intentionally avoid `main` / `[role="main"]` fallbacks - they remove sidebars & nav scaffolding.
     ], {
       checkInterval: 500,
-      maxAttempts: 25,
+      maxAttempts: 60,
       preserveStructure: false
     });
   }

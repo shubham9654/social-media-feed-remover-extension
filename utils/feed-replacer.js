@@ -92,11 +92,6 @@ export async function replaceFeed(selectors, options = {}) {
       restoreFeed(selectors);
       return;
     }
-
-    // Prevent duplicate quotes - only one feed-replacer on page at a time
-    if (document.querySelector('.feed-replacer-container')) {
-      return;
-    }
     
     attempts++;
     

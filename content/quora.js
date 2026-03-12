@@ -8,9 +8,11 @@ import { getSettings, addStorageListener, setupNavigationListener, scheduleHomep
 
 const SELECTORS = {
   feed: [
+    'div[role="main"] [data-testid="feed"]',
+    'main [data-testid="feed"]',
     '[data-testid="feed"]',
     '.q-box[data-testid="feed"]',
-    'main [data-testid="feed"]'
+    '[data-testid="main-feed"]'
   ],
   sidebar: [
     '[data-testid="sidebar"]',
@@ -44,12 +46,14 @@ async function initQuoraFeedReplacer() {
 
   if (quoraSettings.hideFeed === true && onHome) {
     await replaceFeed([
+        'div[role="main"] [data-testid="feed"]',
         'main [data-testid="feed"]',
         '[data-testid="feed"]',
-        '.q-box[data-testid="feed"]'
+        '.q-box[data-testid="feed"]',
+        '[data-testid="main-feed"]'
     ], {
       checkInterval: 500,
-      maxAttempts: 30,
+      maxAttempts: 60,
       preserveStructure: false
     });
   }
