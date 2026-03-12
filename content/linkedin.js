@@ -11,7 +11,12 @@ const FEED_TARGET_VALUE = 'linkedin-feed';
 
 const SELECTORS = {
   // Keep this tight: do NOT target `main` or broad containers, otherwise sidebars get wiped.
+  // Primary feed containers based on current LinkedIn DOM (similar to News Feed Eradicator):
+  // - The main scaffold feed
+  // - The mainFeed update list container
   feed: [
+    'main > div.relative > .scaffold-finite-scroll',
+    "div[componentkey^='container-update-list_mainFeed']",
     'main[role="main"] .scaffold-finite-scroll__content',
     'div.scaffold-layout__main .scaffold-finite-scroll__content',
     '.scaffold-finite-scroll__content',
@@ -22,8 +27,10 @@ const SELECTORS = {
 };
 
 function tagLinkedInFeedTarget() {
-  // 1) Preferred: actual finite scroll content (center feed list)
+  // 1) Preferred: main feed containers (center column)
   let el =
+    document.querySelector('main > div.relative > .scaffold-finite-scroll') ||
+    document.querySelector("div[componentkey^='container-update-list_mainFeed']") ||
     document.querySelector('main[role="main"] .scaffold-finite-scroll__content') ||
     document.querySelector('div.scaffold-layout__main .scaffold-finite-scroll__content') ||
     document.querySelector('.scaffold-finite-scroll__content');
@@ -32,9 +39,11 @@ function tagLinkedInFeedTarget() {
   if (!el) {
     const update = document.querySelector('.feed-shared-update-v2');
     if (update) {
-      el = update.closest('.scaffold-finite-scroll__content') ||
-           update.closest('div.scaffold-layout__main') ||
-           update.closest('main[role="main"]');
+      el =
+        update.closest("div[componentkey^='container-update-list_mainFeed']") ||
+        update.closest('.scaffold-finite-scroll__content') ||
+        update.closest('div.scaffold-layout__main') ||
+        update.closest('main[role="main"]');
     }
   }
 
